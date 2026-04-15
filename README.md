@@ -1,6 +1,6 @@
 # Various Tiny BASICs
 
-This repository contains Tiny BASIC interpreters for for several late 1970s CPUs, along with assembler and C simulator used to build and test them. Tiny BASICs are minimal BASIC interpreters from the dawn of home computing — see the original 1976 [Dr. Dobb's Journal Vol. 1](https://archive.org/details/dr_dobbs_journal_vol_01) for the history.
+This space contains Tiny BASIC interpreters for for several late 1970s CPUs, along with assembler and C simulator used to build and test them. Tiny BASICs are minimal BASIC interpreters from the dawn of home computing — see the original 1976 [Dr. Dobb's Journal Vol. 1](https://archive.org/details/dr_dobbs_journal_vol_01) for the history.
 
 As per Dr Dobbs, the classic approach was to use an Intermediate Language (IL) between the host CPU and the BASIC parser, which eased porting but cost speed. A hand-assembled 6502 IL version was written by Tom Pittman and is documented at [ittybittycomputers.com](http://www.ittybittycomputers.com/IttyBitty/TinyBasic/index.htm). 
 
@@ -10,7 +10,7 @@ Writing a non-IL Tiny BASIC like [Li Chen's 2kbyte 8080 Palo Alto Tiny BASIC](ht
 
 Time inevitably passed, then recently [Anthropic made a press release where Claude developed A C compiler itself](https://www.anthropic.com/engineering/building-c-compiler), so I thought I'd give it a try on Tiny BASIC.  With significant help from [Claude AI](https://claude.ai), firstly the 6502 Tiny BASIC emeged, then others. See [Using Claude to modify the interpreters](#using-claude-to-modify-the-interpreters) below.
 
-You can play with the 6502 and 8088 version on 8bit workshop
+You can play with the 6502 and 8088 versions on 8bit workshop thanks to [SEHugg](https://github.com/sehugg) 
 
 [6502 Tiny BASIC](http://8bitworkshop.com/v3.12.1/?redir.html?platform=verilog&githubURL=https%3A%2F%2Fgithub.com%2FVinCBR900%2Fmango_one&file=mango1.v)
 
@@ -48,9 +48,9 @@ To avoid using wrong version, Copy old source version to an archive folder and o
 
 ---
 
-## Comparison: Original Tiny BASIC, uBASIC, Apple 1 BASIC, and 4K BASIC
+## Comparison: Original Tiny BASIC, 6502/65c02 uBASIC, Apple 1 BASIC, and 6502 4K BASIC - Others coming soon!
 
-This section compares four interpreters from the same tradition: the original Tiny BASIC specification published in Dr. Dobb's Journal (1975–1976), these 6502/65C02 2KB uBASICs, Apple 1 BASIC written by Steve Wozniak (1976), andthis  65c02 4KB BASIC.
+This section compares four interpreters from the same tradition: the original Tiny BASIC specification published in Dr. Dobb's Journal (1975–1976), these 6502/65C02 2KB uBASICs, Apple 1 BASIC written by Steve Wozniak (1976), and this 65c02 4KB BASIC.
 
 ### Background
 
@@ -139,11 +139,11 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 
 **Original Tiny BASIC specification** (DDJ Vol 1, 1975–1976). The spec is intentionally minimal — Dennis Allison's goal was a BASIC small enough to fit in 4 KB of RAM on an 8080 with room left for programs. `IF` does not have `ELSE`. There is no `REM`, no `FOR`, no `DATA`, no functions. `GOSUB` and computed `GOTO` are present from the start. The single-array `@(i)` was added by some implementations (notably Palo Alto Tiny BASIC) but is not in the base specification. String literals appear only as arguments to `PRINT`.
 
-**uBASIC** (~2 KB, this project). Closest in spirit to the original Tiny BASIC spec. Adds `REM`, `%` (modulo), `CHR$(n)`, `USR(addr)`, `PEEK`/`POKE`, bitwise operators, and `FREE` — all things a bare-metal 6502 programmer needs immediately. Omits `FOR`, `GOSUB`, and computed `GOTO` to stay within 2 KB. Does not tokenise: programs are stored and interpreted as raw ASCII, which costs some speed but saves tokeniser code. Loops and subroutines are implemented with `GOTO` and variable-based state, as in the classic Tiny BASIC tradition.
+**uBASIC 6502/65c02** (~2 KB, this project). Closest in spirit to the original Tiny BASIC spec. Adds `REM`, `%` (modulo), `CHR$(n)`, `USR(addr)`, `PEEK`/`POKE`, bitwise operators, and `FREE` — all things a bare-metal 6502 programmer needs immediately. Omits `FOR`, `GOSUB`, and computed `GOTO` to stay within 2 KB. Does not tokenise: programs are stored and interpreted as raw ASCII, which costs some speed but saves tokeniser code. Loops and subroutines are implemented with `GOTO` and variable-based state, as in the classic Tiny BASIC tradition.
 
 **Apple 1 BASIC** (~4 KB, Wozniak 1976). Fills its 4 KB cassette image with considerably more than the spec. Tokenised for speed; Wozniak noted it outperformed Microsoft BASIC on benchmarks of the day. Adds `FOR`/`NEXT`, integer arrays, character-array strings with `DIM`, `ABS`, `RND`, `AND`/`OR`/`NOT`, `CALL`, `AUTO`, and `HIMEM=`/`LOMEM=`. The `IF` condition uses a value of 1 for true (not just non-zero) which differs from most BASICs. Notably absent: `DATA`/`READ`, `REM`, `ELSE`, `ON…GOTO`, `MOD`, `CHR$`, `ASC`, `SGN`. The Apple 1 had no graphics hardware and no cursor positioning — just a raw serial output, so there is no `HOME`, `TAB`, `VTAB`, `PLOT`, `GR`, etc. at all (those came with the Apple II port). Program execution stops if any key is pressed, which made it easy to accidentally interrupt a running program.
 
-**4K BASIC** (~4 KB, this project). Takes the same 4 KB budget as Apple 1 BASIC and spends it differently: tokenised, includes `FOR`/`NEXT`, `GOSUB`/`RETURN`, `DATA`/`READ`/`RESTORE`, `ON n GOTO/GOSUB`, `ELSE`, `SGN`, `ABS`, `RND`, `ASC`, `CHR$`, `MOD`/`%`, `XOR`, `INKEY`, `CLS`, and `AT(col,row)` cursor control — while omitting arrays and strings. Uses the 65C02's additional instructions (`STZ`, `BRA`, zero-page indirect) to squeeze more features per byte than was possible on the original 6502.
+**4K BASIC 65c02** (~4 KB, this project). Takes the same 4 KB budget as Apple 1 BASIC and spends it differently: tokenised, includes `FOR`/`NEXT`, `GOSUB`/`RETURN`, `DATA`/`READ`/`RESTORE`, `ON n GOTO/GOSUB`, `ELSE`, `SGN`, `ABS`, `RND`, `ASC`, `CHR$`, `MOD`/`%`, `XOR`, `INKEY`, `CLS`, and `AT(col,row)` cursor control — while omitting arrays and strings. Uses the 65C02's additional instructions (`STZ`, `BRA`, zero-page indirect) to squeeze more features per byte than was possible on the original 6502.
 
 #### What Apple 1 BASIC has that neither Tiny BASIC variant provides
 
