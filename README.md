@@ -107,9 +107,11 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **ELSE** | ✗ | ✗ | ✗ | ✓ |
 | **GOTO expression** | ✓ (computed) | ✗ (literal only) | ✓ (computed) | ✓ (computed) |
 | **GOSUB expression** | ✓ (computed) | ✗ | ✓ (computed) | ✓ (computed) |
+| **GOSUB nesting depth** | impl-dependent | n/a | 8 max | 8 |
 | **RETURN** | ✓ | ✗ | ✓ | ✓ |
 | **ON n GOTO/GOSUB** | ✗ | ✗ | ✗ | ✓ |
 | **FOR/NEXT/STEP** | ✗ | ✗ | ✓ (up to 8 nested) | ✓ |
+| **FOR nesting depth** | n/a | n/a | 8 max | 8 |
 | **DATA/READ/RESTORE** | ✗ | ✗ | ✗ | ✓ |
 | **REM** | ✗ | ✓ | ✗ | ✓ |
 | **END** | ✓ | ✓ | ✓ | ✓ |
@@ -131,8 +133,6 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **HELP / keyword list** | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✗ | ✓ |
 | **AUTO line numbering** | ✗ | ✗ | ✓ | ✗ |
 | **Cassette LOAD/SAVE** | ✗ | ✗ | ✓ (via ACI hardware) | ✗ |
-| **GOSUB nesting depth** | impl-dependent | n/a | 8 max | 8 |
-| **FOR nesting depth** | n/a | n/a | 8 max | 8 |
 | **Line number range** | 1–32767 | 0–32767 | 0–32767 | 0–32767 |
 
 #### Notes on each column
@@ -168,13 +168,13 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 
 ### Size perspective
 
-| Interpreter | Year | Size | Platform |
-|-------------|------|------|----------|
-| Original Tiny BASIC spec | 1975 | — (spec) | any |
-| Palo Alto Tiny BASIC v1 (Li-Chen Wang) | 1976 | 1.77 KB | 8080 |
-| Apple 1 BASIC (Wozniak) | 1976 | 4.0 KB | 6502 |
-| uBASIC (this project) | 2026 | 2.0 KB | 6502/65C02 |
-| 4K BASIC (this project) | 2026 | 4.0 KB | 65C02 |
+| Platform | Interpreter | Year | Size | 
+|----------|-------------|------|------|
+| any | Original Tiny BASIC spec | 1975 | — (spec) |
+| 8080 | Palo Alto Tiny BASIC v1 (Li-Chen Wang) | 1976 | 1.77 KB |
+| 6502 | Apple 1 BASIC (Wozniak) | 1976 | 4.0 KB | 
+| 6502/65c02 | uBASIC (this project) | 2026 | 2.0 KB | 
+| 65c02 | 4K BASIC (this project) | 2026 | 4.0 KB | 
 
 Apple 1 BASIC and 4K BASIC both occupy 4 KB, yet spend that budget in distinctly different ways. Wozniak used much of the space on arrays, strings, and `RND`; the 4K BASIC uses the same space for `DATA`/`READ`, `ELSE`, `ON…GOTO`, `SGN`, `ASC`/`CHR$`, `INKEY`, `CLS`, and cursor control — features more useful on a modern embedded target than array support. Apple 1 BASIC had the original 6502, while these Tiny BASICs uses the 65C02's extra instructions (`STZ`, `BRA`, zero-page indirect addressing) which were not available to Wozniak in 1976.
 
