@@ -1,7 +1,7 @@
 /*
  * hexdebug.c - DOS DEBUG-style hex viewer/editor
  * Version: 1.1.0 Copyright 2026 Vincent Crabtree
- * MIT License see LICENSE
+ * MIT License see LICENCE
  *
  * Interactive command-line hex viewer/editor for binary files.
  * Displays 16 rows of 16 bytes with ASCII preview and supports
@@ -52,12 +52,12 @@ static void print_help(void) {
     puts("  p                     Display previous 16 rows");
     puts("  d [addr]              Display 16 rows from addr (default 0)");
     puts("  e addr aa bb ...      Edit bytes at addr using hex values");
-    puts("  e addr \"text\"         Edit bytes at addr using ASCII text");
+    puts("  e addr \"text\"       Edit bytes at addr using ASCII text");
     puts("  a file                Append another file");
     puts("  w                     Write current buffer to file");
     puts("  s aa bb ...           Search for byte sequence");
-    puts("  s \"text\"             Search for ASCII text");
-    puts("  h                     Show help");
+    puts("  s \"text\"            Search for ASCII text");
+    puts("  h or ?                Show help");
     puts("  n file                Change current filename");
     puts("  r                     Report current filename and file size");
     puts("  q or ESC              Quit (prompts to save if modified)");
@@ -472,7 +472,7 @@ int main(int argc, char **argv) {
             (void)save_file(&hf);
         } else if (cmd == 's') {
             do_search(&hf, p);
-        } else if (cmd == 'h') {
+        } else if (cmd == 'h' || cmd == '?') {
             print_help();
         } else if (cmd == 'n') {
             p = skip_ws(p);
@@ -486,7 +486,7 @@ int main(int argc, char **argv) {
                 hf.filename[sizeof(hf.filename) - 1] = '\0';
             }
         } else if (cmd == 'r') {
-            printf("file: %s\nsize: %zu bytes\n", hf.filename, hf.size);
+            printf("file: %s\nsize: %zu (0x%0X) bytes\n", hf.filename, hf.size, hf.size);
         } else {
             fprintf(stderr, "error: unknown command '%c'\n", cmd);
         }
