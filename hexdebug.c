@@ -1,6 +1,6 @@
 /*
  * hexdebug.c - DOS DEBUG-style hex viewer/editor
- * Version: 1.1.0 Copyright 2026 Vincent Crabtree
+ * Version: 1.1.1 Copyright Vincent Crabtree 2026
  * MIT License see LICENCE
  *
  * Interactive command-line hex viewer/editor for binary files.
@@ -25,9 +25,9 @@
 #define ROW_BYTES 16
 #define PAGE_ROWS 16
 #define PAGE_BYTES (ROW_BYTES * PAGE_ROWS)
-#define HEXDEBUG_VERSION "1.1.0"
+#define HEXDEBUG_VERSION "1.1.1"
 
-static const char *signon = "\nhexdebug v" HEXDEBUG_VERSION "- Interactive DOS DEBUG-style hex file viewer/editor\n";
+static const char *signon = "\nhexdebug v" HEXDEBUG_VERSION " - Interactive DOS DEBUG-style hex file viewer/editor\n";
 
 static volatile sig_atomic_t g_interrupted = 0;
 
@@ -43,12 +43,16 @@ typedef struct {
     bool modified;
     char filename[1024];
     size_t view_addr;
+    size_t search_addr;
+    bool   has_search;
+    uint8_t search_pat[4096];
+    size_t  search_pat_len;
 } HexFile;
 
 static void print_help(void) {
     puts(signon);
     puts("Commands:");
-    puts("  <space> or <enter>    Display next 16 rows");
+    puts("  <enter>               Display next 16 rows");
     puts("  p                     Display previous 16 rows");
     puts("  d [addr]              Display 16 rows from addr (default 0)");
     puts("  e addr aa bb ...      Edit bytes at addr using hex values");
@@ -308,68 +312,87 @@ static void do_append(HexFile *hf, char *args) {
 
 static void do_search(HexFile *hf, char *args) {
     args = skip_ws(args);
-    if (*args == '\0') {
-        fprintf(stderr, "error: s requires pattern\n");
-        return;
-    }
 
-    uint8_t *pat = NULL;
-    size_t pat_len = 0;
+    uint8_t  tmp[4096];
+    uint8_t *pat     = NULL;
+    size_t   pat_len = 0;
+    bool     new_pat = (*args != '\0');   /* empty args → repeat last search */
 
-    if (*args == '"') {
-        args++;
-        char *endq = strrchr(args, '"');
-        if (!endq) {
-            fprintf(stderr, "error: missing closing quote\n");
+    if (new_pat) {
+        if (*args == '"') {
+            args++;
+            char *endq = strrchr(args, '"');
+            if (!endq) {
+                fprintf(stderr, "error: missing closing quote\n");
+                return;
+            }
+            *endq  = '\0';
+            pat     = (uint8_t *)args;
+            pat_len = strlen(args);
+        } else {
+            char *tok = strtok(args, " \t\r\n");
+            while (tok) {
+                if (pat_len >= sizeof(tmp)) {
+                    fprintf(stderr, "error: search pattern too long\n");
+                    return;
+                }
+                if (!parse_hex_u8(tok, &tmp[pat_len])) {
+                    fprintf(stderr, "error: invalid byte value '%s'\n", tok);
+                    return;
+                }
+                pat_len++;
+                tok = strtok(NULL, " \t\r\n");
+            }
+            if (pat_len == 0) {
+                fprintf(stderr, "error: empty search pattern\n");
+                return;
+            }
+            pat = tmp;
+        }
+
+        /* Store pattern in hf for future repeats */
+        if (pat_len > sizeof(hf->search_pat)) {
+            fprintf(stderr, "error: search pattern too long\n");
             return;
         }
-        *endq = '\0';
-        pat = (uint8_t *)args;
-        pat_len = strlen(args);
+        memcpy(hf->search_pat, pat, pat_len);
+        hf->search_pat_len = pat_len;
+        hf->search_addr    = 0;      /* start from beginning for a new pattern */
+        hf->has_search     = true;
     } else {
-        uint8_t tmp[4096];
-        char *tok = strtok(args, " \t\r\n");
-        while (tok) {
-            if (pat_len >= sizeof(tmp)) {
-                fprintf(stderr, "error: search pattern too long\n");
-                return;
-            }
-            if (!parse_hex_u8(tok, &tmp[pat_len])) {
-                fprintf(stderr, "error: invalid byte value '%s'\n", tok);
-                return;
-            }
-            pat_len++;
-            tok = strtok(NULL, " \t\r\n");
-        }
-        if (pat_len == 0) {
-            fprintf(stderr, "error: empty search pattern\n");
+        /* Repeat: advance one byte past last hit so we don't re-find it */
+        if (!hf->has_search || hf->search_pat_len == 0) {
+            fprintf(stderr, "error: no previous search pattern\n");
             return;
         }
-        pat = tmp;
-
-        for (size_t i = 0; i + pat_len <= hf->size; i++) {
-            if (memcmp(hf->data + i, pat, pat_len) == 0) {
-                printf("found at %08zx\n", i);
-                display_page(hf, i);
-                return;
-            }
-        }
-        puts("not found");
-        return;
+        pat     = hf->search_pat;
+        pat_len = hf->search_pat_len;
     }
 
-    if (pat_len == 0) {
-        fprintf(stderr, "error: empty search pattern\n");
-        return;
-    }
-    for (size_t i = 0; i + pat_len <= hf->size; i++) {
+    for (size_t i = hf->search_addr; i + pat_len <= hf->size; i++) {
         if (memcmp(hf->data + i, pat, pat_len) == 0) {
             printf("found at %08zx\n", i);
             display_page(hf, i);
+            hf->search_addr = i + 1;  /* next search resumes after this hit */
             return;
         }
     }
+
+    /* Nothing found from current position — wrap around once */
+    if (hf->search_addr > 0) {
+        puts("not found from here — wrapping to start");
+        for (size_t i = 0; i + pat_len <= hf->search_addr && i + pat_len <= hf->size; i++) {
+            if (memcmp(hf->data + i, pat, pat_len) == 0) {
+                printf("found at %08zx\n", i);
+                display_page(hf, i);
+                hf->search_addr = i + 1;
+                return;
+            }
+        }
+    }
+
     puts("not found");
+    hf->search_addr = 0;
 }
 
 static bool confirm_save_if_needed(HexFile *hf) {
@@ -428,28 +451,26 @@ int main(int argc, char **argv) {
         }
 
         char *p = skip_ws(line);
-        if (*p == '\0' || *p == '\n') {
+        char cmd = (*p == '\0' || *p == '\n') ? '\0' : (char)tolower((unsigned char)*p);
+        if (cmd != '\0') p++;
+
+        switch (cmd) {
+        case '\0':  /* blank line or enter → next page */
             display_page(&hf, hf.view_addr);
-            continue;
-        }
-
-        if (*p == ' ') {
-            display_page(&hf, hf.view_addr);
-            continue;
-        }
-
-        char cmd = (char)tolower((unsigned char)*p);
-        p++;
-
-        if (cmd == 'q') {
             break;
-        } else if (cmd == 'p') {
+
+        case 'q':
+            goto quit;
+
+        case 'p': {
             size_t start = 0;
-            if (hf.view_addr > PAGE_BYTES * 2) {
+            if (hf.view_addr > PAGE_BYTES * 2)
                 start = hf.view_addr - PAGE_BYTES * 2;
-            }
             display_page(&hf, start);
-        } else if (cmd == 'd') {
+            break;
+        }
+
+        case 'd': {
             p = skip_ws(p);
             size_t addr = 0;
             if (*p != '\0' && *p != '\n') {
@@ -460,21 +481,36 @@ int main(int argc, char **argv) {
                 }
             }
             display_page(&hf, addr);
-        } else if (cmd == 'e') {
+            break;
+        }
+
+        case 'e':
             do_edit(&hf, p);
-        } else if (cmd == 'a') {
+            break;
+
+        case 'a': {
             p = skip_ws(p);
             char *end = p + strlen(p);
             while (end > p && isspace((unsigned char)end[-1])) end--;
             *end = '\0';
             do_append(&hf, p);
-        } else if (cmd == 'w') {
+            break;
+        }
+
+        case 'w':
             (void)save_file(&hf);
-        } else if (cmd == 's') {
+            break;
+
+        case 's':
             do_search(&hf, p);
-        } else if (cmd == 'h' || cmd == '?') {
+            break;
+
+        case 'h':
+        case '?':
             print_help();
-        } else if (cmd == 'n') {
+            break;
+
+        case 'n': {
             p = skip_ws(p);
             char *end = p + strlen(p);
             while (end > p && isspace((unsigned char)end[-1])) end--;
@@ -485,12 +521,19 @@ int main(int argc, char **argv) {
                 strncpy(hf.filename, p, sizeof(hf.filename) - 1);
                 hf.filename[sizeof(hf.filename) - 1] = '\0';
             }
-        } else if (cmd == 'r') {
-            printf("file: %s\nsize: %zu (0x%0X) bytes\n", hf.filename, hf.size, hf.size);
-        } else {
+            break;
+        }
+
+        case 'r':
+            printf("file: %s\nsize: %zu (0x%zX) bytes\n", hf.filename, hf.size, hf.size);
+            break;
+
+        default:
             fprintf(stderr, "error: unknown command '%c'\n", cmd);
+            break;
         }
     }
+    quit:
 
     if (g_interrupted) {
         free(hf.data);
