@@ -1,6 +1,6 @@
 /*
  * hexdebug.c - DOS DEBUG-style hex viewer/editor
- * Version: 1.1.0 Copright 2026 Vincent Crabtree
+ * Version: 1.1.0
  *
  * Interactive command-line hex viewer/editor for binary files.
  * Displays 16 rows of 16 bytes with ASCII preview and supports
@@ -26,6 +26,8 @@
 #define PAGE_BYTES (ROW_BYTES * PAGE_ROWS)
 #define HEXDEBUG_VERSION "1.1.0"
 
+static const char *signon = "\nhexdebug v" HEXDEBUG_VERSION "- Interactive DOS DEBUG-style hex file viewer/editor\n";
+
 static volatile sig_atomic_t g_interrupted = 0;
 
 static void on_sigint(int sig) {
@@ -43,7 +45,7 @@ typedef struct {
 } HexFile;
 
 static void print_help(void) {
-    printf("hexdebug v%s - Interactive DOS DEBUG-style hex file viewer/editor\n", HEXDEBUG_VERSION);
+    puts(signon);
     puts("Commands:");
     puts("  <space> or <enter>    Display next 16 rows");
     puts("  p                     Display previous 16 rows");
@@ -182,7 +184,7 @@ static bool parse_hex_u8(const char *tok, uint8_t *out) {
 static bool parse_hex_addr(const char *tok, size_t *out) {
     if (!tok || !*tok) return false;
     char *end = NULL;
-    unsigned long long v = strtoull(tok, &end, 16);
+    unsigned long long v = strtoul(tok, &end, 16);
     if (*end != '\0') return false;
     *out = (size_t)v;
     return true;
@@ -384,9 +386,17 @@ static bool confirm_save_if_needed(HexFile *hf) {
 int main(int argc, char **argv) {
     signal(SIGINT, on_sigint);
 
-    if (argc != 2) {
-        fprintf(stderr, "usage: %s <file>\n", argv[0]);
+    if (argc != 2 ) {
+        puts(signon);
+        fprintf(stderr, "usage: %s <file>\n\n", argv[0]);
         return 1;
+    }
+
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h")) {
+            print_help();
+            return 1;
+        }
     }
 
     HexFile hf;
@@ -397,9 +407,12 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    puts(signon);
+
     display_page(&hf, 0);
 
     char line[4096];
+
     while (!g_interrupted) {
         printf(": ");
         fflush(stdout);
