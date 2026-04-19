@@ -1,6 +1,7 @@
 /*
  * hexdebug.c - DOS DEBUG-style hex viewer/editor
- * Version: 1.1.0
+ * Version: 1.1.0 Copyright 2026 Vincent Crabtree
+ * MIT License see LICENSE
  *
  * Interactive command-line hex viewer/editor for binary files.
  * Displays 16 rows of 16 bytes with ASCII preview and supports
