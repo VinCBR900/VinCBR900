@@ -47,6 +47,7 @@ typedef struct {
     bool   has_search;
     uint8_t search_pat[4096];
     size_t  search_pat_len;
+    bool    search_pat_is_text;
 } HexFile;
 
 static void print_help(void) {
@@ -310,6 +311,19 @@ static void do_append(HexFile *hf, char *args) {
     hf->modified = true;
 }
 
+static void format_pattern(const uint8_t *pat, size_t len, bool is_text, char *buf, size_t bufsz) {
+    size_t pos = 0;
+    if (is_text) {
+        pos += (size_t)snprintf(buf + pos, bufsz - pos, "\"");
+        for (size_t i = 0; i < len && pos + 2 < bufsz; i++)
+            pos += (size_t)snprintf(buf + pos, bufsz - pos, "%c", (char)pat[i]);
+        snprintf(buf + pos, bufsz - pos, "\"");
+    } else {
+        for (size_t i = 0; i < len && pos + 4 < bufsz; i++)
+            pos += (size_t)snprintf(buf + pos, bufsz - pos, i ? " %02X" : "%02X", pat[i]);
+    }
+}
+
 static void do_search(HexFile *hf, char *args) {
     args = skip_ws(args);
 
@@ -329,7 +343,9 @@ static void do_search(HexFile *hf, char *args) {
             *endq  = '\0';
             pat     = (uint8_t *)args;
             pat_len = strlen(args);
+            hf->search_pat_is_text = true;
         } else {
+            hf->search_pat_is_text = false;
             char *tok = strtok(args, " \t\r\n");
             while (tok) {
                 if (pat_len >= sizeof(tmp)) {
@@ -369,21 +385,23 @@ static void do_search(HexFile *hf, char *args) {
         pat_len = hf->search_pat_len;
     }
 
+    char patbuf[256];
+    format_pattern(pat, pat_len, hf->search_pat_is_text, patbuf, sizeof(patbuf));
+
     for (size_t i = hf->search_addr; i + pat_len <= hf->size; i++) {
         if (memcmp(hf->data + i, pat, pat_len) == 0) {
-            printf("found at %08zx\n", i);
+            printf("found %s at %08zx\n", patbuf, i);
             display_page(hf, i);
-            hf->search_addr = i + 1;  /* next search resumes after this hit */
+            hf->search_addr = i + 1;
             return;
         }
     }
 
-    /* Nothing found from current position — wrap around once */
     if (hf->search_addr > 0) {
         puts("not found from here — wrapping to start");
         for (size_t i = 0; i + pat_len <= hf->search_addr && i + pat_len <= hf->size; i++) {
             if (memcmp(hf->data + i, pat, pat_len) == 0) {
-                printf("found at %08zx\n", i);
+                printf("found %s at %08zx\n", patbuf, i);
                 display_page(hf, i);
                 hf->search_addr = i + 1;
                 return;
