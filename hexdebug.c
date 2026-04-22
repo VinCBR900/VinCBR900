@@ -1,11 +1,16 @@
 /*
  * hexdebug.c - DOS DEBUG-style hex viewer/editor
- * Version: 1.1.1 Copyright Vincent Crabtree 2026
+ * Version: 1.2.1 Copyright Vincent Crabtree 2026
  * MIT License see LICENCE
  *
  * Interactive command-line hex viewer/editor for binary files.
  * Displays 16 rows of 16 bytes with ASCII preview and supports
  * paging, editing, searching, appending, and saving.
+ *
+ * Version history:
+ *   1.2.1 - Fix d [addr] [count] exact-width output, add fill command, and report search state.
+ *   1.2.0 - Add backup-on-write behavior, --skip-backups option, and d [addr] [count].
+ *   1.1.1 - Search repeat and wrap behavior refinements.
  */
 
 #include <ctype.h>
@@ -25,7 +30,7 @@
 #define ROW_BYTES 16
 #define PAGE_ROWS 16
 #define PAGE_BYTES (ROW_BYTES * PAGE_ROWS)
-#define HEXDEBUG_VERSION "1.1.1"
+#define HEXDEBUG_VERSION "1.2.1"
 
 static const char *signon = "\nhexdebug v" HEXDEBUG_VERSION " - Interactive DOS DEBUG-style hex file viewer/editor\n";
 
@@ -52,39 +57,40 @@ typedef struct {
 
 static void print_help(void) {
     puts(signon);
+    puts("Usage:");
+    puts("  hexdebug [--skip-backups] <file>");
+    puts("");
     puts("Commands:");
     puts("  <enter>               Display next 16 rows");
     puts("  p                     Display previous 16 rows");
-    puts("  d [addr]              Display 16 rows from addr (default 0)");
+    puts("  d [addr] [count]      Display bytes from addr (default 0, count defaults to 256)");
     puts("  e addr aa bb ...      Edit bytes at addr using hex values");
     puts("  e addr \"text\"       Edit bytes at addr using ASCII text");
+    puts("  f addr count value    Fill count bytes at addr with one hex byte value");
     puts("  a file                Append another file");
-    puts("  w                     Write current buffer to file");
-    puts("  s aa bb ...           Search for byte sequence");
-    puts("  s \"text\"            Search for ASCII text");
+    puts("  w                     Write current buffer to file (creates .bak unless --skip-backups)");
+    puts("  s aa bb ...           Set byte-sequence search pattern and find first match");
+    puts("  s \"text\"            Set text search pattern and find first match");
+    puts("  s                     Repeat current search from next byte (wraps to start)");
     puts("  h or ?                Show help");
     puts("  n file                Change current filename");
-    puts("  r                     Report current filename and file size");
+    puts("  r                     Report filename, size, and current search pattern");
     puts("  q or ESC              Quit (prompts to save if modified)");
     puts("  Ctrl-C                Quit immediately");
 }
 
-static void print_row(const uint8_t *data, size_t size, size_t addr) {
+static void print_row(const uint8_t *data, size_t size, size_t addr, size_t row_bytes) {
     printf("%08zx  ", addr);
-    for (size_t i = 0; i < ROW_BYTES; i++) {
+    for (size_t i = 0; i < row_bytes; i++) {
         if (addr + i < size) {
             printf("%02X ", data[addr + i]);
-        } else {
-            printf("   ");
         }
     }
     printf(" ");
-    for (size_t i = 0; i < ROW_BYTES; i++) {
+    for (size_t i = 0; i < row_bytes; i++) {
         if (addr + i < size) {
             unsigned char c = data[addr + i];
             putchar(isprint(c) ? (int)c : '.');
-        } else {
-            putchar(' ');
         }
     }
     putchar('\n');
@@ -97,8 +103,32 @@ static void display_page(HexFile *hf, size_t start) {
     hf->view_addr = start;
     size_t addr = start;
     for (int row = 0; row < PAGE_ROWS && addr < hf->size; row++) {
-        print_row(hf->data, hf->size, addr);
+        print_row(hf->data, hf->size, addr, ROW_BYTES);
         addr += ROW_BYTES;
+    }
+    hf->view_addr = addr;
+}
+
+static void display_count(HexFile *hf, size_t start, size_t count) {
+    if (start > hf->size) {
+        start = hf->size;
+    }
+    if (count == 0) {
+        hf->view_addr = start;
+        return;
+    }
+
+    size_t end = start + count;
+    if (end < start || end > hf->size) {
+        end = hf->size;
+    }
+
+    size_t addr = start;
+    while (addr < end) {
+        size_t chunk = end - addr;
+        if (chunk > ROW_BYTES) chunk = ROW_BYTES;
+        print_row(hf->data, hf->size, addr, chunk);
+        addr += chunk;
     }
     hf->view_addr = addr;
 }
@@ -161,7 +191,81 @@ static bool load_file(HexFile *hf, const char *name) {
     return true;
 }
 
-static bool save_file(HexFile *hf) {
+static bool file_exists(const char *path) {
+    FILE *fp = fopen(path, "rb");
+    if (!fp) return false;
+    fclose(fp);
+    return true;
+}
+
+static bool copy_file(const char *src, const char *dst) {
+    FILE *in = fopen(src, "rb");
+    if (!in) {
+        fprintf(stderr, "error: cannot open %s for backup: %s\n", src, strerror(errno));
+        return false;
+    }
+    FILE *out = fopen(dst, "wb");
+    if (!out) {
+        fclose(in);
+        fprintf(stderr, "error: cannot create backup %s: %s\n", dst, strerror(errno));
+        return false;
+    }
+
+    unsigned char buf[8192];
+    size_t nread = 0;
+    bool ok = true;
+    while ((nread = fread(buf, 1, sizeof(buf), in)) > 0) {
+        if (fwrite(buf, 1, nread, out) != nread) {
+            ok = false;
+            break;
+        }
+    }
+    if (ferror(in)) ok = false;
+    if (fclose(out) != 0) ok = false;
+    fclose(in);
+
+    if (!ok) {
+        fprintf(stderr, "error: backup copy failed (%s -> %s)\n", src, dst);
+    }
+    return ok;
+}
+
+static bool create_backup_if_needed(const char *path, bool skip_backups) {
+    if (skip_backups || !file_exists(path)) {
+        return true;
+    }
+
+    char backup_path[1152];
+    if (snprintf(backup_path, sizeof(backup_path), "%s.bak", path) >= (int)sizeof(backup_path)) {
+        fprintf(stderr, "error: backup path too long\n");
+        return false;
+    }
+
+    if (file_exists(backup_path)) {
+        if (skip_backups) {
+            return true;
+        }
+        printf("backup already exists: %s\n", backup_path);
+        printf("overwrite backup? (y/n): ");
+        fflush(stdout);
+        char ans[32];
+        if (!fgets(ans, sizeof(ans), stdin)) {
+            return false;
+        }
+        if (ans[0] != 'y' && ans[0] != 'Y') {
+            puts("write canceled");
+            return false;
+        }
+    }
+
+    return copy_file(path, backup_path);
+}
+
+static bool save_file(HexFile *hf, bool skip_backups) {
+    if (!create_backup_if_needed(hf->filename, skip_backups)) {
+        return false;
+    }
+
     FILE *fp = fopen(hf->filename, "wb");
     if (!fp) {
         fprintf(stderr, "error: cannot write %s: %s\n", hf->filename, strerror(errno));
@@ -311,6 +415,42 @@ static void do_append(HexFile *hf, char *args) {
     hf->modified = true;
 }
 
+static void do_fill(HexFile *hf, char *args) {
+    args = skip_ws(args);
+    char *addr_tok = strtok(args, " \t\r\n");
+    char *count_tok = strtok(NULL, " \t\r\n");
+    char *value_tok = strtok(NULL, " \t\r\n");
+    if (!addr_tok || !count_tok || !value_tok) {
+        fprintf(stderr, "error: f requires addr count value\n");
+        return;
+    }
+
+    size_t addr = 0;
+    size_t count = 0;
+    uint8_t value = 0;
+    if (!parse_hex_addr(addr_tok, &addr)) {
+        fprintf(stderr, "error: invalid address\n");
+        return;
+    }
+    if (!parse_hex_addr(count_tok, &count)) {
+        fprintf(stderr, "error: invalid count\n");
+        return;
+    }
+    if (!parse_hex_u8(value_tok, &value)) {
+        fprintf(stderr, "error: invalid fill value\n");
+        return;
+    }
+    if (count == 0) {
+        return;
+    }
+    if (!ensure_capacity(hf, addr + count)) {
+        return;
+    }
+    memset(hf->data + addr, value, count);
+    if (addr + count > hf->size) hf->size = addr + count;
+    hf->modified = true;
+}
+
 static void format_pattern(const uint8_t *pat, size_t len, bool is_text, char *buf, size_t bufsz) {
     size_t pos = 0;
     if (is_text) {
@@ -413,14 +553,14 @@ static void do_search(HexFile *hf, char *args) {
     hf->search_addr = 0;
 }
 
-static bool confirm_save_if_needed(HexFile *hf) {
+static bool confirm_save_if_needed(HexFile *hf, bool skip_backups) {
     if (!hf->modified) return true;
     printf("file modified. save changes? (y/n): ");
     fflush(stdout);
     char ans[32];
     if (!fgets(ans, sizeof(ans), stdin)) return false;
     if (ans[0] == 'y' || ans[0] == 'Y') {
-        return save_file(hf);
+        return save_file(hf, skip_backups);
     }
     return true;
 }
@@ -428,23 +568,34 @@ static bool confirm_save_if_needed(HexFile *hf) {
 int main(int argc, char **argv) {
     signal(SIGINT, on_sigint);
 
-    if (argc != 2 ) {
-        puts(signon);
-        fprintf(stderr, "usage: %s <file>\n\n", argv[0]);
-        return 1;
-    }
+    bool skip_backups = false;
+    const char *input_file = NULL;
 
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h")) {
             print_help();
             return 1;
+        } else if (!strcmp(argv[i], "--skip-backups")) {
+            skip_backups = true;
+        } else if (input_file == NULL) {
+            input_file = argv[i];
+        } else {
+            puts(signon);
+            fprintf(stderr, "usage: %s [--skip-backups] <file>\n\n", argv[0]);
+            return 1;
         }
+    }
+
+    if (input_file == NULL) {
+        puts(signon);
+        fprintf(stderr, "usage: %s [--skip-backups] <file>\n\n", argv[0]);
+        return 1;
     }
 
     HexFile hf;
     memset(&hf, 0, sizeof(hf));
 
-    if (!load_file(&hf, argv[1])) {
+    if (!load_file(&hf, input_file)) {
         free(hf.data);
         return 1;
     }
@@ -491,19 +642,31 @@ int main(int argc, char **argv) {
         case 'd': {
             p = skip_ws(p);
             size_t addr = 0;
+            size_t count = PAGE_BYTES;
             if (*p != '\0' && *p != '\n') {
                 char *tok = strtok(p, " \t\r\n");
                 if (!parse_hex_addr(tok, &addr)) {
                     fprintf(stderr, "error: invalid address\n");
                     continue;
                 }
+                char *count_tok = strtok(NULL, " \t\r\n");
+                if (count_tok) {
+                    if (!parse_hex_addr(count_tok, &count)) {
+                        fprintf(stderr, "error: invalid byte count\n");
+                        continue;
+                    }
+                }
             }
-            display_page(&hf, addr);
+            display_count(&hf, addr, count);
             break;
         }
 
         case 'e':
             do_edit(&hf, p);
+            break;
+
+        case 'f':
+            do_fill(&hf, p);
             break;
 
         case 'a': {
@@ -516,7 +679,7 @@ int main(int argc, char **argv) {
         }
 
         case 'w':
-            (void)save_file(&hf);
+            (void)save_file(&hf, skip_backups);
             break;
 
         case 's':
@@ -544,6 +707,13 @@ int main(int argc, char **argv) {
 
         case 'r':
             printf("file: %s\nsize: %zu (0x%zX) bytes\n", hf.filename, hf.size, hf.size);
+            if (hf.has_search && hf.search_pat_len > 0) {
+                char patbuf[256];
+                format_pattern(hf.search_pat, hf.search_pat_len, hf.search_pat_is_text, patbuf, sizeof(patbuf));
+                printf("search: %s\n", patbuf);
+            } else {
+                puts("search: <none>");
+            }
             break;
 
         default:
@@ -558,7 +728,7 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    if (!confirm_save_if_needed(&hf)) {
+    if (!confirm_save_if_needed(&hf, skip_backups)) {
         free(hf.data);
         return 1;
     }
