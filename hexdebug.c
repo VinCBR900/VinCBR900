@@ -1,11 +1,15 @@
 /*
  * hexdebug.c - DOS DEBUG-style hex viewer/editor
- * Version: 1.1.1 Copyright Vincent Crabtree 2026
+ * Version: 1.2.0 Copyright Vincent Crabtree 2026
  * MIT License see LICENCE
  *
  * Interactive command-line hex viewer/editor for binary files.
  * Displays 16 rows of 16 bytes with ASCII preview and supports
  * paging, editing, searching, appending, and saving.
+ *
+ * Version history:
+ *   1.2.0 - Add backup-on-write behavior, --skip-backups option, and d [addr] [count].
+ *   1.1.1 - Search repeat and wrap behavior refinements.
  */
 
 #include <ctype.h>
@@ -25,7 +29,7 @@
 #define ROW_BYTES 16
 #define PAGE_ROWS 16
 #define PAGE_BYTES (ROW_BYTES * PAGE_ROWS)
-#define HEXDEBUG_VERSION "1.1.1"
+#define HEXDEBUG_VERSION "1.2.0"
 
 static const char *signon = "\nhexdebug v" HEXDEBUG_VERSION " - Interactive DOS DEBUG-style hex file viewer/editor\n";
 
@@ -52,14 +56,17 @@ typedef struct {
 
 static void print_help(void) {
     puts(signon);
+    puts("Usage:");
+    puts("  hexdebug [--skip-backups] <file>");
+    puts("");
     puts("Commands:");
     puts("  <enter>               Display next 16 rows");
     puts("  p                     Display previous 16 rows");
-    puts("  d [addr]              Display 16 rows from addr (default 0)");
+    puts("  d [addr] [count]      Display bytes from addr (default 0, count defaults to 256)");
     puts("  e addr aa bb ...      Edit bytes at addr using hex values");
     puts("  e addr \"text\"       Edit bytes at addr using ASCII text");
     puts("  a file                Append another file");
-    puts("  w                     Write current buffer to file");
+    puts("  w                     Write current buffer to file (creates .bak unless --skip-backups)");
     puts("  s aa bb ...           Search for byte sequence");
     puts("  s \"text\"            Search for ASCII text");
     puts("  h or ?                Show help");
@@ -98,6 +105,32 @@ static void display_page(HexFile *hf, size_t start) {
     size_t addr = start;
     for (int row = 0; row < PAGE_ROWS && addr < hf->size; row++) {
         print_row(hf->data, hf->size, addr);
+        addr += ROW_BYTES;
+    }
+    hf->view_addr = addr;
+}
+
+static void display_count(HexFile *hf, size_t start, size_t count) {
+    if (start > hf->size) {
+        start = hf->size;
+    }
+    if (count == 0) {
+        hf->view_addr = start;
+        return;
+    }
+
+    size_t end = start + count;
+    if (end < start || end > hf->size) {
+        end = hf->size;
+    }
+
+    size_t addr = start;
+    while (addr < end) {
+        print_row(hf->data, hf->size, addr);
+        if (end - addr <= ROW_BYTES) {
+            addr = end;
+            break;
+        }
         addr += ROW_BYTES;
     }
     hf->view_addr = addr;
@@ -161,7 +194,81 @@ static bool load_file(HexFile *hf, const char *name) {
     return true;
 }
 
-static bool save_file(HexFile *hf) {
+static bool file_exists(const char *path) {
+    FILE *fp = fopen(path, "rb");
+    if (!fp) return false;
+    fclose(fp);
+    return true;
+}
+
+static bool copy_file(const char *src, const char *dst) {
+    FILE *in = fopen(src, "rb");
+    if (!in) {
+        fprintf(stderr, "error: cannot open %s for backup: %s\n", src, strerror(errno));
+        return false;
+    }
+    FILE *out = fopen(dst, "wb");
+    if (!out) {
+        fclose(in);
+        fprintf(stderr, "error: cannot create backup %s: %s\n", dst, strerror(errno));
+        return false;
+    }
+
+    unsigned char buf[8192];
+    size_t nread = 0;
+    bool ok = true;
+    while ((nread = fread(buf, 1, sizeof(buf), in)) > 0) {
+        if (fwrite(buf, 1, nread, out) != nread) {
+            ok = false;
+            break;
+        }
+    }
+    if (ferror(in)) ok = false;
+    if (fclose(out) != 0) ok = false;
+    fclose(in);
+
+    if (!ok) {
+        fprintf(stderr, "error: backup copy failed (%s -> %s)\n", src, dst);
+    }
+    return ok;
+}
+
+static bool create_backup_if_needed(const char *path, bool skip_backups) {
+    if (skip_backups || !file_exists(path)) {
+        return true;
+    }
+
+    char backup_path[1152];
+    if (snprintf(backup_path, sizeof(backup_path), "%s.bak", path) >= (int)sizeof(backup_path)) {
+        fprintf(stderr, "error: backup path too long\n");
+        return false;
+    }
+
+    if (file_exists(backup_path)) {
+        if (skip_backups) {
+            return true;
+        }
+        printf("backup already exists: %s\n", backup_path);
+        printf("overwrite backup? (y/n): ");
+        fflush(stdout);
+        char ans[32];
+        if (!fgets(ans, sizeof(ans), stdin)) {
+            return false;
+        }
+        if (ans[0] != 'y' && ans[0] != 'Y') {
+            puts("write canceled");
+            return false;
+        }
+    }
+
+    return copy_file(path, backup_path);
+}
+
+static bool save_file(HexFile *hf, bool skip_backups) {
+    if (!create_backup_if_needed(hf->filename, skip_backups)) {
+        return false;
+    }
+
     FILE *fp = fopen(hf->filename, "wb");
     if (!fp) {
         fprintf(stderr, "error: cannot write %s: %s\n", hf->filename, strerror(errno));
@@ -413,14 +520,14 @@ static void do_search(HexFile *hf, char *args) {
     hf->search_addr = 0;
 }
 
-static bool confirm_save_if_needed(HexFile *hf) {
+static bool confirm_save_if_needed(HexFile *hf, bool skip_backups) {
     if (!hf->modified) return true;
     printf("file modified. save changes? (y/n): ");
     fflush(stdout);
     char ans[32];
     if (!fgets(ans, sizeof(ans), stdin)) return false;
     if (ans[0] == 'y' || ans[0] == 'Y') {
-        return save_file(hf);
+        return save_file(hf, skip_backups);
     }
     return true;
 }
@@ -428,23 +535,34 @@ static bool confirm_save_if_needed(HexFile *hf) {
 int main(int argc, char **argv) {
     signal(SIGINT, on_sigint);
 
-    if (argc != 2 ) {
-        puts(signon);
-        fprintf(stderr, "usage: %s <file>\n\n", argv[0]);
-        return 1;
-    }
+    bool skip_backups = false;
+    const char *input_file = NULL;
 
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h")) {
             print_help();
             return 1;
+        } else if (!strcmp(argv[i], "--skip-backups")) {
+            skip_backups = true;
+        } else if (input_file == NULL) {
+            input_file = argv[i];
+        } else {
+            puts(signon);
+            fprintf(stderr, "usage: %s [--skip-backups] <file>\n\n", argv[0]);
+            return 1;
         }
+    }
+
+    if (input_file == NULL) {
+        puts(signon);
+        fprintf(stderr, "usage: %s [--skip-backups] <file>\n\n", argv[0]);
+        return 1;
     }
 
     HexFile hf;
     memset(&hf, 0, sizeof(hf));
 
-    if (!load_file(&hf, argv[1])) {
+    if (!load_file(&hf, input_file)) {
         free(hf.data);
         return 1;
     }
@@ -491,14 +609,22 @@ int main(int argc, char **argv) {
         case 'd': {
             p = skip_ws(p);
             size_t addr = 0;
+            size_t count = PAGE_BYTES;
             if (*p != '\0' && *p != '\n') {
                 char *tok = strtok(p, " \t\r\n");
                 if (!parse_hex_addr(tok, &addr)) {
                     fprintf(stderr, "error: invalid address\n");
                     continue;
                 }
+                char *count_tok = strtok(NULL, " \t\r\n");
+                if (count_tok) {
+                    if (!parse_hex_addr(count_tok, &count)) {
+                        fprintf(stderr, "error: invalid byte count\n");
+                        continue;
+                    }
+                }
             }
-            display_page(&hf, addr);
+            display_count(&hf, addr, count);
             break;
         }
 
@@ -516,7 +642,7 @@ int main(int argc, char **argv) {
         }
 
         case 'w':
-            (void)save_file(&hf);
+            (void)save_file(&hf, skip_backups);
             break;
 
         case 's':
@@ -558,7 +684,7 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    if (!confirm_save_if_needed(&hf)) {
+    if (!confirm_save_if_needed(&hf, skip_backups)) {
         free(hf.data);
         return 1;
     }
