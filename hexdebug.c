@@ -1,6 +1,6 @@
 /*
  * hexdebug.c - DOS DEBUG-style hex viewer/editor
- * Version: 1.2.0 Copyright Vincent Crabtree 2026
+ * Version: 1.2.1 Copyright Vincent Crabtree 2026
  * MIT License see LICENCE
  *
  * Interactive command-line hex viewer/editor for binary files.
@@ -8,6 +8,7 @@
  * paging, editing, searching, appending, and saving.
  *
  * Version history:
+ *   1.2.1 - Fix d [addr] [count] exact-width output, add fill command, and report search state.
  *   1.2.0 - Add backup-on-write behavior, --skip-backups option, and d [addr] [count].
  *   1.1.1 - Search repeat and wrap behavior refinements.
  */
@@ -29,7 +30,7 @@
 #define ROW_BYTES 16
 #define PAGE_ROWS 16
 #define PAGE_BYTES (ROW_BYTES * PAGE_ROWS)
-#define HEXDEBUG_VERSION "1.2.0"
+#define HEXDEBUG_VERSION "1.2.1"
 
 static const char *signon = "\nhexdebug v" HEXDEBUG_VERSION " - Interactive DOS DEBUG-style hex file viewer/editor\n";
 
@@ -65,33 +66,31 @@ static void print_help(void) {
     puts("  d [addr] [count]      Display bytes from addr (default 0, count defaults to 256)");
     puts("  e addr aa bb ...      Edit bytes at addr using hex values");
     puts("  e addr \"text\"       Edit bytes at addr using ASCII text");
+    puts("  f addr count value    Fill count bytes at addr with one hex byte value");
     puts("  a file                Append another file");
     puts("  w                     Write current buffer to file (creates .bak unless --skip-backups)");
-    puts("  s aa bb ...           Search for byte sequence");
-    puts("  s \"text\"            Search for ASCII text");
+    puts("  s aa bb ...           Set byte-sequence search pattern and find first match");
+    puts("  s \"text\"            Set text search pattern and find first match");
+    puts("  s                     Repeat current search from next byte (wraps to start)");
     puts("  h or ?                Show help");
     puts("  n file                Change current filename");
-    puts("  r                     Report current filename and file size");
+    puts("  r                     Report filename, size, and current search pattern");
     puts("  q or ESC              Quit (prompts to save if modified)");
     puts("  Ctrl-C                Quit immediately");
 }
 
-static void print_row(const uint8_t *data, size_t size, size_t addr) {
+static void print_row(const uint8_t *data, size_t size, size_t addr, size_t row_bytes) {
     printf("%08zx  ", addr);
-    for (size_t i = 0; i < ROW_BYTES; i++) {
+    for (size_t i = 0; i < row_bytes; i++) {
         if (addr + i < size) {
             printf("%02X ", data[addr + i]);
-        } else {
-            printf("   ");
         }
     }
     printf(" ");
-    for (size_t i = 0; i < ROW_BYTES; i++) {
+    for (size_t i = 0; i < row_bytes; i++) {
         if (addr + i < size) {
             unsigned char c = data[addr + i];
             putchar(isprint(c) ? (int)c : '.');
-        } else {
-            putchar(' ');
         }
     }
     putchar('\n');
@@ -104,7 +103,7 @@ static void display_page(HexFile *hf, size_t start) {
     hf->view_addr = start;
     size_t addr = start;
     for (int row = 0; row < PAGE_ROWS && addr < hf->size; row++) {
-        print_row(hf->data, hf->size, addr);
+        print_row(hf->data, hf->size, addr, ROW_BYTES);
         addr += ROW_BYTES;
     }
     hf->view_addr = addr;
@@ -126,12 +125,10 @@ static void display_count(HexFile *hf, size_t start, size_t count) {
 
     size_t addr = start;
     while (addr < end) {
-        print_row(hf->data, hf->size, addr);
-        if (end - addr <= ROW_BYTES) {
-            addr = end;
-            break;
-        }
-        addr += ROW_BYTES;
+        size_t chunk = end - addr;
+        if (chunk > ROW_BYTES) chunk = ROW_BYTES;
+        print_row(hf->data, hf->size, addr, chunk);
+        addr += chunk;
     }
     hf->view_addr = addr;
 }
@@ -418,6 +415,42 @@ static void do_append(HexFile *hf, char *args) {
     hf->modified = true;
 }
 
+static void do_fill(HexFile *hf, char *args) {
+    args = skip_ws(args);
+    char *addr_tok = strtok(args, " \t\r\n");
+    char *count_tok = strtok(NULL, " \t\r\n");
+    char *value_tok = strtok(NULL, " \t\r\n");
+    if (!addr_tok || !count_tok || !value_tok) {
+        fprintf(stderr, "error: f requires addr count value\n");
+        return;
+    }
+
+    size_t addr = 0;
+    size_t count = 0;
+    uint8_t value = 0;
+    if (!parse_hex_addr(addr_tok, &addr)) {
+        fprintf(stderr, "error: invalid address\n");
+        return;
+    }
+    if (!parse_hex_addr(count_tok, &count)) {
+        fprintf(stderr, "error: invalid count\n");
+        return;
+    }
+    if (!parse_hex_u8(value_tok, &value)) {
+        fprintf(stderr, "error: invalid fill value\n");
+        return;
+    }
+    if (count == 0) {
+        return;
+    }
+    if (!ensure_capacity(hf, addr + count)) {
+        return;
+    }
+    memset(hf->data + addr, value, count);
+    if (addr + count > hf->size) hf->size = addr + count;
+    hf->modified = true;
+}
+
 static void format_pattern(const uint8_t *pat, size_t len, bool is_text, char *buf, size_t bufsz) {
     size_t pos = 0;
     if (is_text) {
@@ -632,6 +665,10 @@ int main(int argc, char **argv) {
             do_edit(&hf, p);
             break;
 
+        case 'f':
+            do_fill(&hf, p);
+            break;
+
         case 'a': {
             p = skip_ws(p);
             char *end = p + strlen(p);
@@ -670,6 +707,13 @@ int main(int argc, char **argv) {
 
         case 'r':
             printf("file: %s\nsize: %zu (0x%zX) bytes\n", hf.filename, hf.size, hf.size);
+            if (hf.has_search && hf.search_pat_len > 0) {
+                char patbuf[256];
+                format_pattern(hf.search_pat, hf.search_pat_len, hf.search_pat_is_text, patbuf, sizeof(patbuf));
+                printf("search: %s\n", patbuf);
+            } else {
+                puts("search: <none>");
+            }
             break;
 
         default:
