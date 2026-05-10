@@ -48,7 +48,7 @@ To avoid using wrong version, Copy old source version to an archive folder and o
 
 ---
 
-## Comparison: Original Tiny BASIC, 6502/65c02 uBASIC, Apple 1 BASIC, and 6502 4K BASIC - Others coming soon!
+## Comparison: Original Tiny BASIC, 6502/65c02 uBASIC, Apple 1 BASIC,  6502 4K BASIC, and 8088 uBASIC
 
 This section compares four interpreters from the same tradition: the original Tiny BASIC specification published in Dr. Dobb's Journal (1975–1976), these 6502/65C02 2KB uBASICs, Apple 1 BASIC written by Steve Wozniak (1976), and this 65c02 4KB BASIC.
 
