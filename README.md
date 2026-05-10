@@ -89,51 +89,51 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 
 ### Feature comparison table
 
-| Feature | Original Tiny BASIC (spec) | uBASIC / uBASIC6502 (~2 KB) | Apple 1 BASIC (~4 KB, 6502) | 4K BASIC (~4 KB, 6502) |
-|---------|---------------------------|-------------------------------|-----------------------------|-----------------------------|
-| **Size** | Spec only | uBASIC: ~2 KB, uBASIC6502: 2006 bytes | 4096 bytes (cassette) | 4093 bytes (ROM) |
-| **CPU target** | N/A | uBASIC: 65C02, uBASIC6502: NMOS 6502 | 6502 | 65C02 |
-| **Tokenised** | ✗ (most impls raw ASCII) | ✗ (raw ASCII) | ✓ | ✓ |
-| **Integer only** | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit |
-| **Variables** | A–Z | A–Z | A–Z, An (letter+digit) | A–Z |
-| **Integer arrays / DIM** | ✗ | ✗ | `DIM A(n)` | ✗ |
-| **Strings** | ✗ (literals in PRINT only) | ✗ | ✓ (char arrays, `DIM A$(n)`) | ✗ (literals in PRINT only) |
-| **Multi-statement `:`** | ✗ | ✓ | ✓ | ✓ |
-| **PRINT `;` no-newline** | ✗ | ✓ | ✓ | ✓ |
-| **PRINT string literal** | ✓ | ✓ | ✓ | ✓ |
-| **INPUT** | ✓ | ✓ | ✓ (With Prompt) | ✓ |
-| **LET** | ✓ (required) | ✓ (optional) | ✓ (optional) | ✓ (optional) |
-| **IF/THEN** | ✓ (line number or stmt) | ✓ | ✓ (stmt or line number) | ✓ |
-| **ELSE** | ✗ | ✗ | ✗ | ✓ |
-| **GOTO expression** | ✓ (computed) | ✗ (literal only) | ✓ (computed) | ✓ (computed) |
-| **GOSUB expression** | ✓ (computed) | ✗ | ✓ (computed) | ✓ (computed) |
-| **GOSUB nesting depth** | impl-dependent | n/a | 8 max | 8 |
-| **RETURN** | ✓ | ✗ | ✓ | ✓ |
-| **ON n GOTO/GOSUB** | ✗ | ✗ | ✗ | ✓ |
-| **FOR/NEXT/STEP** | ✗ | ✗ | ✓ (up to 8 nested) | ✓ |
-| **FOR nesting depth** | n/a | n/a | 8 max | 8 |
-| **DATA/READ/RESTORE** | ✗ | ✗ | ✗ | ✓ |
-| **REM** | ✗ | ✓ | ✗ | ✓ |
-| **END** | ✓ | ✓ | ✓ | ✓ |
-| **CLEAR / NEW** | `CLEAR` | `NEW` | `NEW` | `NEW` |
-| **RUN / LIST** | ✓ | ✓ | ✓ | ✓ |
-| **PEEK / POKE** | ✗ | ✓ | ✓ | ✓ |
-| **Machine Langauge** | ✗ | `USR(addr)` (JSR, returns A)  | `CALL addr` (JSR, no retval) | `USR(addr)` (JSR, returns A) |
-| **Arithmetic Ops** | ✗ | ✗ | `ABS` | `ABS` `SGN` |
-| **RND** | ✗ | ✗ | ✓ `RND(n)` → 0..n-1 | ✓ `RND` → 1..32767 |
-| **Character Conv** | ✗ | `CHR$` | ✗ | `ASC` `CHR$` |
-| **LEN(str)** | ✗ | ✗ | ✓ (on DIM'd strings) | ✗ |
-| **MOD / %** | ✗ | ✓ `%` | ✗ | ✓ both |
-| **Logical Ops** | ✗ | ✗ | ✓ bitwise `AND` `OR` `NOT`) | ✓ bitwise `AND` `OR` `NOT` `XOR` |
-| **Relational ops** | `<` `>` `=` `<=` `>=` `<>` | ✓ | ✓ (also `#` for `<>`) | ✓ |
-| **INKEY (non-blocking)** | ✗ | ✗ | ✗ | ✓ |
-| **CLS / HOME (clear screen)** | ✗ | ✗ | ✗ | ✓ `CLS` |
-| **Cursor positioning** | ✗ | ✗ | ✗ (dumb terminal only) | ✓ `AT(col,row)` in PRINT |
-| **FREE (memory query)** | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✓ `HIMEM=` / `LOMEM=` | ✓ |
-| **HELP / keyword list** | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✗ | ✓ |
-| **AUTO line numbering** | ✗ | ✗ | ✓ | ✗ |
-| **Cassette LOAD/SAVE** | ✗ | ✗ | ✓ (via ACI hardware) | ✗ |
-| **Line number range** | 1–32767 | 0–32767 | 0–32767 | 0–32767 |
+| Feature | Original Tiny BASIC (spec) | uBASIC (2KB 65C02/6502) | Apple 1 BASIC (~4KB, 6502) | 4K BASIC (~4KB, 65C02) | uBASIC (2KB 8088) |
+|---------|---------------------------|-------------------------------|-----------------------------|-----------------------------|-------------------|
+| **Size** | Spec only | uBASIC: ~2 KB, uBASIC6502: ~2006 bytes | 4096 bytes (cassette) | 4093 bytes (ROM) | ~2030 bytes |
+| **CPU target** | N/A | uBASIC: 65C02, uBASIC6502: NMOS 6502 | 6502 | 65C02 | 8088 |
+| **Tokenised** | ✗ (most impls raw ASCII) | ✗ (raw ASCII) | ✓ | ✓ | ✓ |
+| **Integer only** | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit |
+| **Variables** | A–Z | A–Z | A–Z, An (letter+digit) | A–Z | A–Z |
+| **Integer arrays / DIM** | ✗ | ✗ | `DIM A(n)` | ✗ | ✗ |
+| **Strings** | ✗ (literals in PRINT only) | ✗ | ✓ (char arrays, `DIM A$(n)`) | ✗ (literals in PRINT only) |✗ (literals in PRINT only) |
+| **Multi-statement `:`** | ✗ | ✓ | ✓ | ✓ | ✓ |
+| **PRINT `;` no-newline** | ✗ | ✓ | ✓ | ✓ | ✓ |
+| **PRINT string literal** | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **INPUT** | ✓ | ✓ | ✓ (With Prompt) | ✓ | ✓ |
+| **LET** | ✓ (required) | ✓ (optional) | ✓ (optional) | ✓ (optional) | ✓ (optional) |
+| **IF/THEN** | ✓ (line number or stmt) | ✓ | ✓ (stmt or line number) | ✓ | ✓ |
+| **ELSE** | ✗ | ✗ | ✗ | ✓ | ✗ |
+| **GOTO expression** | ✓ (computed) | ✗ (literal only) | ✓ (computed) | ✓ (computed) | ✓ (computed) |
+| **GOSUB expression** | ✓ (computed) | ✗ | ✓ (computed) | ✓ (computed) | ✓ (computed) |
+| **GOSUB nesting depth** | impl-dependent | n/a | 8 max | 8 | 8 |
+| **RETURN** | ✓ | ✗ | ✓ | ✓ | ✓ |
+| **ON n GOTO/GOSUB** | ✗ | ✗ | ✗ | ✓ | ✗ |
+| **FOR/NEXT/STEP** | ✗ | ✗ | ✓ ) | ✓ | ✓ |
+| **FOR nesting depth** | n/a | n/a | 8 | 8 | 8 |
+| **DATA/READ/RESTORE** | ✗ | ✗ | ✗ | ✓ | ✗ |
+| **REM** | ✗ | ✓ | ✗ | ✓ | ✓ |
+| **END** | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **CLEAR / NEW** | `CLEAR` | `NEW` | `NEW` | `NEW` | `NEW` |
+| **RUN / LIST** | ✓ | ✓ | ✓ | ✓ | ✓ (`LIST` has optional `start,end` range|
+| **PEEK / POKE** | ✗ | ✓ | ✓ | ✓ | ✓ and `IN`/`OUT`|
+| **Machine Langauge** | ✗ | `USR(addr)` (JSR, returns A)  | `CALL addr` (JSR, no retval) | `USR(addr)` (JSR, returns A) | `USR(addr)` (CALL, returns AX) |
+| **Arithmetic Ops** | ✗ | ✗ | `ABS` | `ABS` `SGN` | `ABS` | 
+| **RND** | ✗ | ✗ | ✓ `RND(n)` → 0..n-1 | ✓ `RND` → 1..32767 | ✓ `RND(n)` → -n..n |
+| **Character Conv** | ✗ | `CHR$` | ✗ | `ASC` `CHR$` | `CHR$` |
+| **LEN(str)** | ✗ | ✗ | ✓ (on DIM'd strings) | ✗ | ✗ |
+| **MOD / %** | ✗ | ✓ `%` | ✗ | ✓ both | ✓ `%` |
+| **Logical Ops** | ✗ | ✗ | ✓ bitwise `AND` `OR` `NOT` | ✓ bitwise `AND` `OR` `NOT` `XOR` | ✓ bitwise `&` &#124; |
+| **Relational ops** | `<` `>` `=` `<=` `>=` `<>` | ✓ | ✓ (also `#` for `<>`) | ✓ | ✓ |
+| **INKEY (non-blocking)** | ✗ | ✗ | ✗ | ✓ | ✗ |
+| **CLS / HOME (clear screen)** | ✗ | ✗ | ✗ | ✓ `CLS` | ✗ |
+| **Cursor positioning** | ✗ | ✗ | ✗ (dumb terminal only) | ✓ `AT(col,row)` in `PRINT` | ✓ `TAB(spaces)` in `PRINT` |
+| **FREE (memory query)** | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✓ `HIMEM=` / `LOMEM=` | ✓ | ✓ |
+| **HELP / keyword list** | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✗ | ✓ | ✓ |
+| **AUTO line numbering** | ✗ | ✗ | ✓ | ✗ | ✗ |
+| **Cassette LOAD/SAVE** | ✗ | ✗ | ✓ (via ACI hardware) | ✗ | ✗ |
+| **Line number range** | 1–32767 | 0–32767 | 0–32767 | 0–32767 | 1–32767 |
 
 #### Notes on each column
 
