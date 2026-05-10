@@ -124,7 +124,7 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **Character Conv** | ✗ | `CHR$` | ✗ | `ASC` `CHR$` | `CHR$` |
 | **LEN(str)** | ✗ | ✗ | ✓ (on DIM'd strings) | ✗ | ✗ |
 | **MOD / %** | ✗ | ✓ `%` | ✗ | ✓ both | ✓ `%` |
-| **Logical Ops** | ✗ | ✗ | ✓ bitwise `AND` `OR` `NOT` | ✓ bitwise `AND` `OR` `NOT` `XOR` | ✓ bitwise `&` &#124; |
+| **Logical Ops** | ✗ | ✗ | ✓ bitwise `AND` `OR` `NOT` | ✓ bitwise `AND` `OR` `NOT` `XOR` | ✓ bitwise `&` &#124; `NOT(val`|
 | **Relational ops** | `<` `>` `=` `<=` `>=` `<>` | ✓ | ✓ (also `#` for `<>`) | ✓ | ✓ |
 | **INKEY (non-blocking)** | ✗ | ✗ | ✗ | ✓ | ✗ |
 | **CLS / HOME (clear screen)** | ✗ | ✗ | ✗ | ✓ `CLS` | ✗ |
