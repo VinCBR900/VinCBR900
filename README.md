@@ -18,39 +18,14 @@ You can play with the 6502 and 8088 versions on 8bit workshop thanks to [SEHugg]
 
 ---
 
-## Using Claude to Modify the Interpreters
+## Comparison: Dr Dobbs Tiny BASIC, Apple 1 4K BASIC vs These 6502/65c02 uBASIC, 65C02 4K BASIC, and uBASIC 8088
 
-As I'm an Assembly Novice, these interpreters were written collaboratively with [Claude AI](https://claude.ai) — which understood the 65C02 and 8088 instruction set, the space constraints, and the design tradeoffs. The assembler and simulators were also written this way, and together the three tools form a tight workflow that makes the source highly accessible to modification even if you are not an assembly expert. If you are then YMMV.
-
-This may be old news to many people but is included here for those to whom this is new. 
-
-### The workflow
-
-The key insight is that you do not need to understand every Assembly opcode to extend these interpreters. The workflow for 6502 is below, others similar:
-
-1. **Create a 'Project' in Claude**, Upload ASM65c02.c, SIM65c02.c to the files section, add rules like below, and in the chat window upload the ASM version you want to modify and tell it to review.
-```asm
-To avoid wasting tokens, provide brief, terse updates during debugging and resume normal verbosity when concluding. 
-Always uprev tool versions if you need to modify them by updating the header file and update the trace file.
-To avoid using wrong version, Copy old source version to an archive folder and only use them for regression testing.
-```
-3. **Describe what you want** to Claude in plain English — a new statement, a new operator, a bug fix, or a size optimisation.
-4. **Claude proposes the assembly change** with full explanation of what it is doing and whether the tools need updating.
-5. **Tell Claude to implement and Test with the simulator** - If it is interrupted **Dont't Click Retry** but type "continue from Trace file" and it should.
-6. **When complete, Paste the modified source** into the Kowalski simulator or Interactive Sim to cross check:
-   ```bash
-   ./sim65c02_interactive uBASIC.asm "
-   ```
-
-### Things to watch out for
-
-- **Fall-through chains.** Several functions share a single RTS by falling through into the next function. These are clearly marked in the source. Inserting code between them without understanding the fall-through will break things — tell Claude to watch out for them.
-
----
-
-## Comparison: Original Tiny BASIC, 6502/65c02 uBASIC, Apple 1 BASIC,  6502 4K BASIC, and 8088 uBASIC
-
-This section compares four interpreters from the same tradition: the original Tiny BASIC specification published in Dr. Dobb's Journal (1975–1976), these 6502/65C02 2KB uBASICs, Apple 1 BASIC written by Steve Wozniak (1976), and this 65c02 4KB BASIC.
+This section compares four interpreters from the same tradition: 
+  - the original Tiny BASIC specification published in Dr. Dobb's Journal (1975–1976),
+  - these 6502/65C02 2KB uBASICs,
+  - Apple 1 BASIC written by Steve Wozniak (1976),
+  - this 65c02 4KB BASIC
+  - This 8088 2KB uBASIC
 
 ### Background
 
@@ -145,26 +120,28 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 
 **4K BASIC 65c02** (~4 KB, this project). Takes the same 4 KB budget as Apple 1 BASIC and spends it differently: tokenised, includes `FOR`/`NEXT`, `GOSUB`/`RETURN`, `DATA`/`READ`/`RESTORE`, `ON n GOTO/GOSUB`, `ELSE`, `SGN`, `ABS`, `RND`, `ASC`, `CHR$`, `MOD`/`%`, `XOR`, `INKEY`, `CLS`, and `AT(col,row)` cursor control — while omitting arrays and strings. Uses the 65C02's additional instructions (`STZ`, `BRA`, zero-page indirect) to squeeze more features per byte than was possible on the original 6502.
 
-#### What Apple 1 BASIC has that neither Tiny BASIC variant provides
+**uBASIC 8088** (~2 KB, this project). Ported from 65C02 uBASIC, but due to the intrinsec signed 16 bit instruction set provides ROM space for extra functionality: `DELAY`, `FOR..TO..[STEP]`/`NEXT`, `GOSUB`/`RETURN`, `IN`/`OUT`,  and optional (start, end) for `LIST`, `TAB(n)` in addition to `CHR$` in `PRINT`.  Keywords are mostly tokenized to save RAM space.  
+
+#### What Apple 1 BASIC has that non of my Tiny BASIC variants provide
 
 - **Integer arrays.** `DIM A(20)` allocates a numeric array. Wozniak's original game programs used arrays heavily for board state.
 - **Character-array strings.** `DIM A$(20)` plus slice indexing `A$(2,5)` — an HP BASIC style approach that avoids the overhead of a string heap. There is no equivalent in any Tiny BASIC without significant added code.
 - **`AUTO` line numbering.** Prompt with incrementing line numbers — saves typing.
 - **`HIMEM=` / `LOMEM=`.** Direct control of the program/variable memory boundaries. Useful when BASIC shares memory with machine code.
-- **Cassette LOAD/SAVE.** Via the Apple Cassette Interface — entirely hardware-specific but functional.
+- **Cassette LOAD/SAVE.** Via the Apple Cassette Interface — entirely hardware-specific. Little point for these toy systems apart from educational.
 
 #### What these Tiny BASIC variants have that Apple 1 BASIC doesn't
 
-- **`DATA` / `READ` / `RESTORE`** (4K BASIC). Wozniak deliberately omitted these as unnecessary for game programming. 4K BASIC includes full support; look-up tables and static sequences are much more convenient with `DATA`.
-- **`ON n GOTO` / `ON n GOSUB`** (4K BASIC). Multi-way computed dispatch without needing a computed `GOTO` expression and careful arithmetic.
-- **`ELSE`** (4K BASIC). Apple 1 BASIC's `IF` has no else branch; a second `IF NOT (...)` line is needed.
-- **`MOD` / `%`** (both). Apple 1 BASIC has no modulo; programmers used `A - (A/B)*B`.
-- **`REM`** (uBASIC, 4K BASIC). Apple 1 BASIC has no comment statement at all.
-- **`AND` / `OR` / `XOR` / `NOT`** (4K BASIC).
-- **`CHR$(n)` / `ASC(c)`** (uBASIC, 4K BASIC). Useful for character-based I/O.
-- **`INKEY`** (4K BASIC). Non-blocking key read. Apple 1 BASIC stops execution on any keypress, making non-blocking input impossible.
-- **Cursor control** (4K BASIC). `AT(col,row)` in PRINT. The Apple 1's dumb terminal interface made this hardware-impossible.
-- **`CLS`** (4K BASIC).
+- **`DATA` / `READ` / `RESTORE`** (65C02 4K BASIC). Wozniak deliberately omitted these as unnecessary for game programming. 4K BASIC includes full support; look-up tables and static sequences are much more convenient with `DATA`.
+- **`ON n GOTO` / `ON n GOSUB`** (65C02 4K BASIC). Multi-way computed dispatch without needing a computed `GOTO` expression and careful arithmetic.
+- **`ELSE`** (65C024K BASIC). Apple 1 BASIC's `IF` has no else branch; a second `IF NOT (...)` line is needed.
+- **`MOD` / `%`** (all). Apple 1 BASIC has no modulo; programmers used `A - (A/B)*B`.
+- **`REM`** (all). Apple 1 BASIC has no comment statement at all.
+- **`AND` / `OR` / `XOR` / `NOT`** (65C02 4K BASIC, uBASIC 8088).
+- **`CHR$(n)` / `ASC(c)` / `TAB(n)`** (6502 uBASIC CHR$ only, uBASIC8088 `CHR$` & `TAB(n)`, 65C02 4K BASIC all three). Useful for character-based I/O.
+- **`INKEY`** (65C02 4K BASIC only). Non-blocking key read. Apple 1 BASIC stops execution on any keypress, making non-blocking input impossible.
+- **Print Formatting - AT(ROW,COL), TAB(n)** (65C02 4K BASIC has `AT`, uBASIC8088 has `TAB(n)` after `PRINT`. The Apple 1's dumb terminal did not allow.
+- **`CLS`** (65C02 4K BASIC).
 
 ### Size perspective
 
@@ -175,10 +152,9 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | 6502 | Apple 1 BASIC (Wozniak) | 1976 | 4.0 KB | 
 | 6502/65c02 | uBASIC (this project) | 2026 | 2.0 KB | 
 | 65c02 | 4K BASIC (this project) | 2026 | 4.0 KB | 
+| 8088 | uBASIC (this project) | 2026 | 2.0 KB | 
 
 Apple 1 BASIC and 4K BASIC both occupy 4 KB, yet spend that budget in distinctly different ways. Wozniak used much of the space on arrays, strings, and `RND`; the 4K BASIC uses the same space for `DATA`/`READ`, `ELSE`, `ON…GOTO`, `SGN`, `ASC`/`CHR$`, `INKEY`, `CLS`, and cursor control — features more useful on a modern embedded target than array support. Apple 1 BASIC had the original 6502, while these Tiny BASICs uses the 65C02's extra instructions (`STZ`, `BRA`, zero-page indirect addressing) which were not available to Wozniak in 1976.
-
-uBASIC at 2 KB sits squarely in the original Tiny BASIC tradition: non-tokenised, no `FOR`, no `GOSUB`, immediate and simple. It extends the spec with the minimum needed for a real 6502 system: `PEEK`/`POKE`, `USR()`, `CHR$`, `%`, bitwise operators.
 
 ---
 
@@ -188,6 +164,36 @@ uBASIC at 2 KB sits squarely in the original Tiny BASIC tradition: non-tokenised
 - **Will Stevens'** [1kbyte 8080 Tiny BASIC](https://github.com/WillStevens/basic1K) was also a more recent inspiration and taught me a few old skool tricks on code density. 
 - **Hans Otten** for a thorough [6502 Tiny BASIC site](http://retro.hansotten.nl/6502-sbc/kim-1-manuals-and-software/kim-1-software/tiny-basic).
 - **[Claude AI](https://claude.ai)** for making it possible for a non-expert to ship something that had been on the back burner since 1989.
+
+---
+
+## Using Claude to Modify the Interpreters
+
+As I'm an Assembly Novice, these interpreters were written collaboratively with [Claude AI](https://claude.ai) — which understood the 65C02 and 8088 instruction set, the space constraints, and the design tradeoffs. The assembler and simulators were also written this way, and together the three tools form a tight workflow that makes the source highly accessible to modification even if you are not an assembly expert. If you are then YMMV.
+
+This may be old news to many people but is included here for those to whom this is new. 
+
+### The workflow
+
+The key insight is that you do not need to understand every Assembly opcode to extend these interpreters. The workflow for 6502 is below, others similar:
+
+1. **Create a 'Project' in Claude**, Upload ASM65c02.c, SIM65c02.c to the files section, add rules like below, and in the chat window upload the ASM version you want to modify and tell it to review.
+```asm
+To avoid wasting tokens, provide brief, terse updates during debugging and resume normal verbosity when concluding. 
+Always uprev tool versions if you need to modify them by updating the header file and update the trace file.
+To avoid using wrong version, Copy old source version to an archive folder and only use them for regression testing.
+```
+3. **Describe what you want** to Claude in plain English — a new statement, a new operator, a bug fix, or a size optimisation.
+4. **Claude proposes the assembly change** with full explanation of what it is doing and whether the tools need updating.
+5. **Tell Claude to implement and Test with the simulator** - If it is interrupted **Dont't Click Retry** but type "continue from Trace file" and it should.
+6. **When complete, Paste the modified source** into the Kowalski simulator or Interactive Sim to cross check:
+   ```bash
+   ./sim65c02_interactive uBASIC.asm "
+   ```
+
+### Things to watch out for
+
+- **Fall-through chains.** Several functions share a single RTS by falling through into the next function. These are clearly marked in the source. Inserting code between them without understanding the fall-through will break things — tell Claude to watch out for them.
 
 ---
 
