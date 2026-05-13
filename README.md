@@ -1,4 +1,4 @@
-# Various Tiny BASICs
+# A Stack of Tiny BASICs
 
 This space contains Tiny BASIC interpreters for for several late 1970s CPUs, along with assembler and C simulator used to build and test them. Tiny BASICs are minimal BASIC interpreters from the dawn of home computing — see the original 1976 [Dr. Dobb's Journal Vol. 1](https://archive.org/details/dr_dobbs_journal_vol_01) for the history.
 
@@ -21,11 +21,11 @@ You can play with the 6502 and 8088 versions on 8bit workshop thanks to [SEHugg]
 ## Comparison: Dr Dobbs Tiny BASIC, Apple 1 4K BASIC vs These 6502/65c02 uBASIC, 65C02 4K BASIC, and uBASIC 8088
 
 This section compares four interpreters from the same tradition: 
-  - the original Tiny BASIC specification published in Dr. Dobb's Journal (1975–1976),
-  - these 6502/65C02 2KB uBASICs,
+  - The original Tiny BASIC specification published in Dr. Dobb's Journal (1975–1976),
+  - These 6502/65C02 2KB uBASICs,
   - Apple 1 BASIC written by Steve Wozniak (1976),
-  - this 65c02 4KB BASIC
-  - This 8088 2KB uBASIC
+  - This 65c02 4KB BASIC,
+  - This 2KB uBASIC8088,
 
 ### Background
 
