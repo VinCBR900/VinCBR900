@@ -2,11 +2,11 @@
 
 This space contains Tiny BASIC interpreters for for several late 1970s CPUs, along with assembler and C simulator used to build and test them. Tiny BASICs are minimal BASIC interpreters from the dawn of home computing — see the original 1976 [Dr. Dobb's Journal Vol. 1](https://archive.org/details/dr_dobbs_journal_vol_01) for the history.
 
-As per Dr Dobbs, the classic approach was to use an Intermediate Language (IL) between the host CPU and the BASIC parser, which eased porting but cost speed. A hand-assembled 6502 IL version was written by Tom Pittman and is documented at [ittybittycomputers.com](http://www.ittybittycomputers.com/IttyBitty/TinyBasic/index.htm). 
+I first came across Tiny BASIC via single chip micros with the [Zilog Z8671](https://hc-ddr.hucki.net/wiki/lib/exe/fetch.php/einplatinenrechner/z8671_app_note.pdf) in the late 1980s and built an [Intel 8052AHBasic](https://www.bitsavers.org/components/intel/8051/MCS_BASIC-52/270010-003_MCS_BASIC-52_Users_Manual_Nov1986.pdf) toy system in early 1990s, and was fascinated in BASIC functionality in tiny ROM.  However I never found a 2 KB Tiny BASIC for 6502 that would fit comfortably in a 2716 EPROM (Apple 1 Integer BASIC was 4kbyte, see below).
 
-I first came across Tiny BASIC single chip micros with the [Zilog Z8671](https://hc-ddr.hucki.net/wiki/lib/exe/fetch.php/einplatinenrechner/z8671_app_note.pdf) in the late 1980s and built an [Intel 8052AHBasic](https://www.bitsavers.org/components/intel/8051/MCS_BASIC-52/270010-003_MCS_BASIC-52_Users_Manual_Nov1986.pdf) toy system in early 1990s, and was fascinated in BASIC functionality in tiny ROM.  However I never found a 2 KB Tiny BASIC that would fit comfortably in a 2716 EPROM (Apple 1 Integer BASIC was 4kbyte, see below).
+As per Dr Dobbs, the classic implementation approach was to use an Intermediate Language (IL) between the host CPU and the BASIC parser, which eased porting but cost speed. A hand-assembled 6502 IL version was written by Tom Pittman and is documented at [ittybittycomputers.com](http://www.ittybittycomputers.com/IttyBitty/TinyBasic/index.htm). 
 
-Writing a non-IL Tiny BASIC like [Li Chen's 2kbyte 8080 Palo Alto Tiny BASIC](https://archive.org/details/Palo_Alto_Tiny_BASIC_Version_3_Li-Chen_Wang_1977) myself seemed daunting, until I came across [x86 BootBASIC](https://github.com/nanochess/bootBASIC) by Oscar Toledo, which sparked the idea of a short, doable direct (non-IL) 6502 version, but after trying it was obvious my 65c02 were just not up to it.  
+Writing a non-IL Tiny BASIC like [Li Chen's 2kbyte 8080 Palo Alto Tiny BASIC](https://archive.org/details/Palo_Alto_Tiny_BASIC_Version_3_Li-Chen_Wang_1977) myself seemed daunting, until in 2020 I came across [x86 BootBASIC](https://github.com/nanochess/bootBASIC) by Oscar Toledo, which sparked the idea of a short, doable direct (non-IL) 6502 version, but after trying it was obvious my 6502 skills were just not up to it.  
 
 Time inevitably passed, then recently [Anthropic made a press release where Claude developed A C compiler itself](https://www.anthropic.com/engineering/building-c-compiler), so I thought I'd give it a try on Tiny BASIC.  With significant help from [Claude AI](https://claude.ai), firstly the 65C02 uBASIC Tiny BASIC emeged, then others. My original sequence plan was MOS 6502, Signetics 2650 then Intel 8088, but the 2650 version is a struggle as the instruction set architecture is ... different.   See [Using Claude to modify the interpreters](#using-claude-to-modify-the-interpreters) below.
 
@@ -80,7 +80,7 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **LET** | ✓ (required) | ✓ (optional) | ✓ (optional) | ✓ (optional) | ✓ (optional) |
 | **IF/THEN** | ✓ (line number or stmt) | ✓ | ✓ (stmt or line number) | ✓ | ✓ |
 | **ELSE** | ✗ | ✗ | ✗ | ✓ | ✗ |
-| **GOTO expression** | ✓ (computed) | ✗ (literal only) | ✓ (computed) | ✓ (computed) | ✓ (computed) |
+| **GOTO expression** | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) |
 | **GOSUB expression** | ✓ (computed) | ✗ | ✓ (computed) | ✓ (computed) | ✓ (computed) |
 | **GOSUB nesting depth** | impl-dependent | n/a | 8 max | 8 | 8 |
 | **RETURN** | ✓ | ✗ | ✓ | ✓ | ✓ |
@@ -118,7 +118,7 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 
 **Apple 1 BASIC** (~4 KB, Wozniak 1976). Fills its 4 KB cassette image with considerably more than the spec. Tokenised for speed; Wozniak noted it outperformed Microsoft BASIC on benchmarks of the day. Adds `FOR`/`NEXT`, integer arrays, character-array strings with `DIM`, `ABS`, `RND`, `AND`/`OR`/`NOT`, `CALL`, `AUTO`, and `HIMEM=`/`LOMEM=`. The `IF` condition uses a value of 1 for true (not just non-zero) which differs from most BASICs. Notably absent: `DATA`/`READ`, `REM`, `ELSE`, `ON…GOTO`, `MOD`, `CHR$`, `ASC`, `SGN`. The Apple 1 had no graphics hardware and no cursor positioning — just a raw serial output, so there is no `HOME`, `TAB`, `VTAB`, `PLOT`, `GR`, etc. at all (those came with the Apple II port). Program execution stops if any key is pressed, which made it easy to accidentally interrupt a running program.
 
-**4K BASIC 65c02** (~4 KB, this project). Takes the same 4 KB budget as Apple 1 BASIC and spends it differently: tokenised, includes `FOR`/`NEXT`, `GOSUB`/`RETURN`, `DATA`/`READ`/`RESTORE`, `ON n GOTO/GOSUB`, `ELSE`, `SGN`, `ABS`, `RND`, `ASC`, `CHR$`, `MOD`/`%`, `XOR`, `INKEY`, `CLS`, and `AT(col,row)` cursor control — while omitting arrays and strings. Uses the 65C02's additional instructions (`STZ`, `BRA`, zero-page indirect) to squeeze more features per byte than was possible on the original 6502.
+**4K BASIC 65c02** (~4 KB, this project). This was an experiment expanding 2kbyte Tiny BASIC for the 6502 in the Kowalski emulator: tokenised, includes `FOR`/`NEXT`, `GOSUB`/`RETURN`, `DATA`/`READ`/`RESTORE`, `ON n GOTO/GOSUB`, `ELSE`, `SGN`, `ABS`, `RND`, `ASC`, `CHR$`, `MOD`/`%`, `XOR`, `INKEY`, `CLS`, and `AT(col,row)` cursor control, still no arrays arrays or strings. In all honesty, if you are looking for a more powerful 6502 BASIC then [EhBASIC](https://github.com/picocomputer/ehbasic) is hard to beat. 
 
 **uBASIC 8088** (~2 KB, this project). Ported from 65C02 uBASIC, but due to the intrinsec signed 16 bit instruction set provides ROM space for extra functionality: `DELAY`, `FOR..TO..[STEP]`/`NEXT`, `GOSUB`/`RETURN`, `IN`/`OUT`, optional (start, end) for `LIST`, `TAB(n)` in addition to `CHR$` in `PRINT`.  Keywords are mostly tokenized to save RAM space.  
 
@@ -128,7 +128,7 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 - **Character-array strings.** `DIM A$(20)` plus slice indexing `A$(2,5)` — an HP BASIC style approach that avoids the overhead of a string heap. There is no equivalent in any Tiny BASIC without significant added code.
 - **`AUTO` line numbering.** Prompt with incrementing line numbers — saves typing.
 - **`HIMEM=` / `LOMEM=`.** Direct control of the program/variable memory boundaries. Useful when BASIC shares memory with machine code.
-- **Cassette LOAD/SAVE.** Via the Apple Cassette Interface — entirely hardware-specific. Little point for these toy systems apart from educational.
+- **Cassette LOAD/SAVE.** Via the Apple Cassette Interface — entirely hardware-specific. Nowdays Little point for these toy systems apart from educational.
 
 #### What these Tiny BASIC variants have that Apple 1 BASIC doesn't
 
@@ -138,7 +138,7 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 - **`MOD` / `%`** (all). Apple 1 BASIC has no modulo; programmers used `A - (A/B)*B`.
 - **`REM`** (all). Apple 1 BASIC has no comment statement at all.
 - **`AND` / `OR` / `XOR` / `NOT`** (65C02 4K BASIC, uBASIC 8088).
-- **`CHR$(n)` / `ASC(c)` / `TAB(n)`** (6502 uBASIC CHR$ only, uBASIC8088 `CHR$` & `TAB(n)`, 65C02 4K BASIC all three). Useful for character-based I/O.
+- **`CHR$(n)` / `ASC(c)`** (6502/8088 uBASIC CHR$ only, 65C02 4K BASIC all three). Useful for character-based I/O.
 - **`INKEY`** (65C02 4K BASIC only). Non-blocking key read. Apple 1 BASIC stops execution on any keypress, making non-blocking input impossible.
 - **Print Formatting - AT(ROW,COL), TAB(n)** (65C02 4K BASIC has `AT`, uBASIC8088 has `TAB(n)` after `PRINT`. The Apple 1's dumb terminal did not allow.
 - **`CLS`** (65C02 4K BASIC).
