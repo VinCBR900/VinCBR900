@@ -8,9 +8,9 @@ As per Dr Dobbs, the classic implementation approach was to use an Intermediate 
 
 Writing a non-IL Tiny BASIC like [Li Chen's 2kbyte 8080 Palo Alto Tiny BASIC](https://archive.org/details/Palo_Alto_Tiny_BASIC_Version_3_Li-Chen_Wang_1977) myself seemed daunting, until in 2020 I came across [x86 BootBASIC](https://github.com/nanochess/bootBASIC) by Oscar Toledo, which sparked the idea of a short, doable direct (non-IL) 6502 version, but after trying it was obvious my 6502 skills were just not up to it.  
 
-Time inevitably passed, then recently [Anthropic made a press release where Claude developed A C compiler itself](https://www.anthropic.com/engineering/building-c-compiler), so I thought I'd give it a try on Tiny BASIC.  With significant help from [Claude AI](https://claude.ai), firstly the 65C02 uBASIC Tiny BASIC emeged, then others. My original sequence plan was MOS 6502, Signetics 2650 then Intel 8088, but the 2650 version is a struggle as the instruction set architecture is ... different.   
+Time inevitably passed, then recently [Anthropic made a press release where Claude developed A C compiler itself](https://www.anthropic.com/engineering/building-c-compiler), so I thought I'd give it a try on Tiny BASIC.  With significant help from [Claude AI](https://claude.ai)  the 65C02 uBASIC Tiny BASIC emerged. This went so well (in part because Claude had a double off-peak usage promo) I decided to expand to two other projects I saw when young - the obscure Signetics 2650 (popular in Australia) and the Intel 8088 I saw in Byte magazine a long time ago.  The original sequence plan was MOS 6502, Signetics 2650 then Intel 8088, but the 2650 version was a struggle as the instruction set architecture is ... different.   
 
-You can play with the Signetics 2650, MOS 6502 and Intel 8088 versions online at the Links below -Thanks to [8Bitworkshop](https://8bitworkshop.com/) for the IDE 
+You can play with the Signetics 2650, MOS 6502 and Intel 8088 versions online at the Links below -Thanks to [8Bitworkshop](https://8bitworkshop.com/) for the IDE versions
 
 [MOS 6502 Tiny BASIC](http://8bitworkshop.com/v3.12.1/?redir.html?platform=verilog&githubURL=https%3A%2F%2Fgithub.com%2FVinCBR900%2Fmango_one&file=mango1.v)
 
@@ -69,14 +69,13 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 |---------|---------------------------|-------------------------------|-----------------------------|-----------------------------|-------------------|-------------------|
 | **Size** | Spec only | <2 KByte ROM | 4096 bytes (cassette) | 4093 bytes ROM | 2 KByte ROM | 4 KByte ROM |
 | **CPU target** | N/A | uBASIC: 65C02, uBASIC6502: NMOS 6502 | 6502 | 65C02 | Intel 8088 | Signetics 2650 |
-| **Tokenised** | ✗ (most impls raw ASCII) | ✗ (raw ASCII) | ✓ | ✓ | ✓ | ✗ (2 byte match) | 
+| **Tokenised** | ✗ (mostly raw ASCII) | ✗ (uBASIC6502 byte match) | ✓ | ✓ | ✓ | ✗ (2 byte match) | 
 | **Integer only** | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit |
 | **Variables** | A–Z | A–Z | A–Z, An (letter+digit) | A–Z | A–Z | A–Z |
 | **Integer arrays / DIM** | ✗ | ✗ | `DIM A(n)` | ✗ | ✗ | ✗ |
 | **Strings** | ✗ (`PRINT "str"`) | ✗ | ✓ (char arrays, `DIM A$(n)`) | ✗ (`PRINT "str"`) |✗ (`PRINT "str"`) |✗ (`PRINT "str"`) |
 | **Multi-statement `:`** | ✗ | ✓ | ✓ | ✓ | ✓ | ✗ | 
 | **PRINT `;` no-newline** | ✗ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **PRINT string literal** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **INPUT** | ✓ | ✓ | ✓ (With Prompt) | ✓ | ✓ | ✓ |
 | **LET** | ✓ (required) | ✓ (optional) | ✓ (optional) | ✓ (optional) | ✓ (optional) | ✓ (optional) |
 | **IF/THEN** | ✓ (line number or stmt) | ✓ | ✓ (stmt or line number) | ✓ | ✓ | ✓ |
