@@ -10,11 +10,13 @@ Writing a non-IL Tiny BASIC like [Li Chen's 2kbyte 8080 Palo Alto Tiny BASIC](ht
 
 Time inevitably passed, then recently [Anthropic made a press release where Claude developed A C compiler itself](https://www.anthropic.com/engineering/building-c-compiler), so I thought I'd give it a try on Tiny BASIC.  With significant help from [Claude AI](https://claude.ai), firstly the 65C02 uBASIC Tiny BASIC emeged, then others. My original sequence plan was MOS 6502, Signetics 2650 then Intel 8088, but the 2650 version is a struggle as the instruction set architecture is ... different.   See [Using Claude to modify the interpreters](#using-claude-to-modify-the-interpreters) below.
 
-You can play with the 6502 and 8088 versions on 8bit workshop thanks to [SEHugg](https://github.com/sehugg) 
+You can play with the Signetics 2650, MOS 6502 and Intel 8088 versions online at the Links below -Thanks to [8Bitworkshop](https://8bitworkshop.com/) for the IDE 
 
-[6502 Tiny BASIC](http://8bitworkshop.com/v3.12.1/?redir.html?platform=verilog&githubURL=https%3A%2F%2Fgithub.com%2FVinCBR900%2Fmango_one&file=mango1.v)
+[MOS 6502 Tiny BASIC](http://8bitworkshop.com/v3.12.1/?redir.html?platform=verilog&githubURL=https%3A%2F%2Fgithub.com%2FVinCBR900%2Fmango_one&file=mango1.v)
 
-[8088 Tiny BASIC](http://8bitworkshop.com/v3.12.1/?redir.html?platform=x86&githubURL=https%3A%2F%2Fgithub.com%2FVinCBR900%2F8086-Tiny-BASIC&file=uBASIC8088.asm)
+[Intel 8088 Tiny BASIC](http://8bitworkshop.com/v3.12.1/?redir.html?platform=x86&githubURL=https%3A%2F%2Fgithub.com%2FVinCBR900%2F8086-Tiny-BASIC&file=uBASIC8088.asm)
+
+[Signetics 2650 Tiny BASIC](https://vincbr900.github.io/2650-Tiny-BASIC/)
 
 ---
 
@@ -73,7 +75,7 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **Integer only** | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit |
 | **Variables** | A–Z | A–Z | A–Z, An (letter+digit) | A–Z | A–Z | A–Z |
 | **Integer arrays / DIM** | ✗ | ✗ | `DIM A(n)` | ✗ | ✗ | ✗ |
-| **Strings** | ✗ (literals in PRINT only) | ✗ | ✓ (char arrays, `DIM A$(n)`) | ✗ (literals in PRINT only) |✗ (literals in PRINT only) |✗ (literals in PRINT only) |
+| **Strings** | ✗ (literals in `PRINT`) | ✗ | ✓ (char arrays, `DIM A$(n)`) | ✗ (literals in `PRINT`) |✗ (literals in `PRINT`) |✗ (literals in `PRINT`) |
 | **Multi-statement `:`** | ✗ | ✓ | ✓ | ✓ | ✓ | ✗ | 
 | **PRINT `;` no-newline** | ✗ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **PRINT string literal** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
@@ -104,7 +106,7 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **Relational ops** | `<` `>` `=` `<=` `>=` `<>` | ✓ | ✓ (also `#` for `<>`) | ✓ | ✓ | ✓ |
 | **INKEY (non-blocking)** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
 | **CLS / HOME (clear screen)** | ✗ | ✗ | ✗ | ✓ `CLS` | ✗ | ✗ |
-| **Cursor positioning** | ✗ | ✗ | ✗ (dumb terminal only) | ✓ `AT(col,row)` in `PRINT` | ✓ `TAB(spaces)` in `PRINT` | ✓ `TAB(spaces)` in `PRINT` |
+| **`PRINT` Cursor positioning** | ✗ | ✗ | ✗ (dumb terminal only) | ✓ `AT(col,row)` | ✓ `TAB(spaces)`| ✓ `TAB(spaces)`|
 | **FREE (memory query)** | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✓ `HIMEM=` / `LOMEM=` | ✓ | ✓ | ✗ |
 | **HELP / keyword list** | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✗ | ✓ | ✓ | ✗ |
 | **AUTO line numbering** | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ |
@@ -156,8 +158,11 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | 6502/65c02 | uBASIC (this project) | 2026 | 2.0 KB | 
 | 65c02 | 4K BASIC (this project) | 2026 | 4.0 KB | 
 | 8088 | uBASIC (this project) | 2026 | 2.0 KB | 
+| 2650 | uBASIC (this project) | 2026 | 4.0 KB | 
+
 
 Apple 1 BASIC and 4K BASIC both occupy 4 KB, yet spend that budget in distinctly different ways. Wozniak used much of the space on arrays, strings, and `RND`; the 4K BASIC uses the same space for `DATA`/`READ`, `ELSE`, `ON…GOTO`, `SGN`, `ASC`/`CHR$`, `INKEY`, `CLS`, and cursor control — features more useful on a modern embedded target than array support. Apple 1 BASIC had the original 6502, while these Tiny BASICs uses the 65C02's extra instructions (`STZ`, `BRA`, zero-page indirect addressing) which were not available to Wozniak in 1976.
+The signetics 2650 is an extinct CPU with powerful feature liek regsiter incrementing, indexing, indrect pointers and conditional returns, but ruined by the 8 deep harware stack.  Additionally, most Branch instructions take 3 bytes as the relative range is only +/- 63 bytes. 
 
 ---
 
