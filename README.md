@@ -8,7 +8,7 @@ As per Dr Dobbs, the classic implementation approach was to use an Intermediate 
 
 Writing a non-IL Tiny BASIC like [Li Chen's 2kbyte 8080 Palo Alto Tiny BASIC](https://archive.org/details/Palo_Alto_Tiny_BASIC_Version_3_Li-Chen_Wang_1977) myself seemed daunting, until in 2020 I came across [x86 BootBASIC](https://github.com/nanochess/bootBASIC) by Oscar Toledo, which sparked the idea of a short, doable direct (non-IL) 6502 version, but after trying it was obvious my 6502 skills were just not up to it.  
 
-Time inevitably passed, then recently [Anthropic made a press release where Claude developed A C compiler itself](https://www.anthropic.com/engineering/building-c-compiler), so I thought I'd give it a try on Tiny BASIC.  With significant help from [Claude AI](https://claude.ai), firstly the 65C02 uBASIC Tiny BASIC emeged, then others. My original sequence plan was MOS 6502, Signetics 2650 then Intel 8088, but the 2650 version is a struggle as the instruction set architecture is ... different.   See [Using Claude to modify the interpreters](#using-claude-to-modify-the-interpreters) below.
+Time inevitably passed, then recently [Anthropic made a press release where Claude developed A C compiler itself](https://www.anthropic.com/engineering/building-c-compiler), so I thought I'd give it a try on Tiny BASIC.  With significant help from [Claude AI](https://claude.ai), firstly the 65C02 uBASIC Tiny BASIC emeged, then others. My original sequence plan was MOS 6502, Signetics 2650 then Intel 8088, but the 2650 version is a struggle as the instruction set architecture is ... different.   
 
 You can play with the Signetics 2650, MOS 6502 and Intel 8088 versions online at the Links below -Thanks to [8Bitworkshop](https://8bitworkshop.com/) for the IDE 
 
@@ -73,7 +73,7 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **Integer only** | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit |
 | **Variables** | A–Z | A–Z | A–Z, An (letter+digit) | A–Z | A–Z | A–Z |
 | **Integer arrays / DIM** | ✗ | ✗ | `DIM A(n)` | ✗ | ✗ | ✗ |
-| **Strings** | ✗ (literals in `PRINT`) | ✗ | ✓ (char arrays, `DIM A$(n)`) | ✗ (literals in `PRINT`) |✗ (literals in `PRINT`) |✗ (literals in `PRINT`) |
+| **Strings** | ✗ (`PRINT "str"`) | ✗ | ✓ (char arrays, `DIM A$(n)`) | ✗ (`PRINT "str"`) |✗ (`PRINT "str"`) |✗ (`PRINT "str"`) |
 | **Multi-statement `:`** | ✗ | ✓ | ✓ | ✓ | ✓ | ✗ | 
 | **PRINT `;` no-newline** | ✗ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **PRINT string literal** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
@@ -98,17 +98,14 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **Math Functions** | ✗ | ✗ | `ABS` | `ABS` `SGN` | `ABS` | ✗ |  
 | **RND** | ✗ | ✗ | ✓ `RND(n)` → 0..n-1 | ✓ `RND` → 1..32767 | ✓ `RND(n)` → -n..n | ✗ |
 | **Character Conv** | ✗ | `CHR$` | ✗ | `ASC` `CHR$` | `CHR$` | `CHR$` |
-| **LEN(str)** | ✗ | ✗ | ✓ (on DIM'd strings) | ✗ | ✗ | ✗ |
 | **MOD / %** | ✗ | ✓ `%` | ✗ | ✓ both | ✓ `%` | ✗ |
 | **Logical Ops** | ✗ | ✗ | ✓ bitwise `AND` `OR` `NOT` | ✓ bitwise `AND` `OR` `NOT` `XOR` | ✓ bitwise `&` `\|` `NOT(val)`| ✗ |
 | **Relational ops** | `<` `>` `=` `<=` `>=` `<>` | ✓ | ✓ (also `#` for `<>`) | ✓ | ✓ | ✓ |
 | **INKEY (non-blocking)** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
 | **CLS / HOME (clear screen)** | ✗ | ✗ | ✗ | ✓ `CLS` | ✗ | ✗ |
 | **`PRINT` Cursor positioning** | ✗ | ✗ | ✗ (dumb terminal only) | ✓ `AT(col,row)` | ✓ `TAB(spaces)`| ✓ `TAB(spaces)`|
-| **FREE (memory query)** | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✓ `HIMEM=` / `LOMEM=` | ✓ | ✓ | ✗ |
-| **HELP / keyword list** | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✗ | ✓ | ✓ | ✗ |
-| **AUTO line numbering** | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ |
-| **Cassette LOAD/SAVE** | ✗ | ✗ | ✓ (via ACI hardware) | ✗ | ✗ | ✗ |
+| **Memory Query** `FREE` | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✓ `HIMEM=` / `LOMEM=` | ✓ | ✓ | ✗ |
+| **keyword list** `HELP` | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✗ | ✓ | ✓ | ✗ |
 | **Line number range** | 1–32767 | 0–32767 | 0–32767 | 0–32767 | 1–32767 | 1–32767 |
 
 #### Notes on each column
@@ -135,16 +132,18 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 
 #### What these Tiny BASIC variants have that Apple 1 BASIC doesn't
 
-- **`DATA` / `READ` / `RESTORE`** (65C02 4K BASIC). Wozniak deliberately omitted these as unnecessary for game programming. 4K BASIC includes full support; look-up tables and static sequences are much more convenient with `DATA`.
-- **`ON n GOTO` / `ON n GOSUB`** (65C02 4K BASIC). Multi-way computed dispatch without needing a computed `GOTO` expression and careful arithmetic.
-- **`ELSE`** (65C024K BASIC). Apple 1 BASIC's `IF` has no else branch; a second `IF NOT (...)` line is needed.
-- **`MOD` / `%`** (all). Apple 1 BASIC has no modulo; programmers used `A - (A/B)*B`.
+- **`MOD` / `%`** (not 2650). Apple 1 BASIC has no modulo; programmers used `A - (A/B)*B`.
 - **`REM`** (all). Apple 1 BASIC has no comment statement at all.
 - **`AND` / `OR` / `XOR` / `NOT`** (65C02 4K BASIC, uBASIC 8088).
-- **`CHR$(n)` / `ASC(c)`** (6502/8088 uBASIC CHR$ only, 65C02 4K BASIC all three). Useful for character-based I/O.
-- **`INKEY`** (65C02 4K BASIC only). Non-blocking key read. Apple 1 BASIC stops execution on any keypress, making non-blocking input impossible.
-- **Print Formatting - AT(ROW,COL), TAB(n)** (65C02 4K BASIC has `AT`, uBASIC8088 has `TAB(n)` after `PRINT`. The Apple 1's dumb terminal did not allow.
-- **`CLS`** (65C02 4K BASIC).
+- **`CHR$(n)` / `ASC(c)`** (2650/6502/8088 uBASIC CHR$ only, 65C02 4K BASIC all three). Useful for character-based I/O.
+- **Print Formatting - AT(ROW,COL), TAB(n)** (65C02 4K BASIC has `AT`, uBASIC2650/uBASIC8088 has `TAB(n)` after `PRINT`. The Apple 1's dumb terminal did not allow.
+
+6502 4k BASIC Only
+- **`DATA` / `READ` / `RESTORE`** - Wozniak deliberately omitted these as unnecessary for game programming. 4K BASIC includes full support; look-up tables and static sequences are much more convenient with `DATA`.
+- **`ON n GOTO` / `ON n GOSUB`** - Multi-way computed dispatch without needing a computed `GOTO` expression and careful arithmetic.
+- **`ELSE`** - Apple 1 BASIC's `IF` has no else branch; a second `IF NOT (...)` line is needed.
+- **`INKEY`** - Non-blocking key read. Apple 1 BASIC stops execution on any keypress, making non-blocking input impossible.
+- **`CLS`** - clear screen
 
 ### Size perspective
 
@@ -160,7 +159,8 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 
 
 Apple 1 BASIC and 4K BASIC both occupy 4 KB, yet spend that budget in distinctly different ways. Wozniak used much of the space on arrays, strings, and `RND`; the 4K BASIC uses the same space for `DATA`/`READ`, `ELSE`, `ON…GOTO`, `SGN`, `ASC`/`CHR$`, `INKEY`, `CLS`, and cursor control — features more useful on a modern embedded target than array support. Apple 1 BASIC had the original 6502, while these Tiny BASICs uses the 65C02's extra instructions (`STZ`, `BRA`, zero-page indirect addressing) which were not available to Wozniak in 1976.
-The signetics 2650 is an extinct CPU with powerful feature liek regsiter incrementing, indexing, indrect pointers and conditional returns, but ruined by the 8 deep harware stack.  Additionally, most Branch instructions take 3 bytes as the relative range is only +/- 63 bytes. 
+
+The signetics 2650 is an extinct CPU with powerful feature like register incrementing, indexing, indrect pointers and conditional returns, but limited by the 8 deep harware stack.  Additionally, most Branch instructions take 3 bytes as the relative range is only +/- 63 bytes. 
 
 ---
 
@@ -168,38 +168,7 @@ The signetics 2650 is an extinct CPU with powerful feature liek regsiter increme
 
 - **Oscar Toledo** for [x86 BootBASIC](https://github.com/nanochess/bootBASIC) — my original inspiration for a non-IL Tiny BASIC approach.
 - **Will Stevens'** [1kbyte 8080 Tiny BASIC](https://github.com/WillStevens/basic1K) was also a more recent inspiration and taught me a few old skool tricks on code density. 
-- **Hans Otten** for a thorough [6502 Tiny BASIC site](http://retro.hansotten.nl/6502-sbc/kim-1-manuals-and-software/kim-1-software/tiny-basic).
 - **[Claude AI](https://claude.ai)** for making it possible for a non-expert to ship something that had been on the back burner since 1989.
-
----
-
-## Using Claude to Modify the Interpreters
-
-As I'm an Assembly Novice, these interpreters were written collaboratively with [Claude AI](https://claude.ai) — which understood the 65C02 and 8088 instruction set, the space constraints, and the design tradeoffs. The assembler and simulators were also written this way, and together the three tools form a tight workflow that makes the source highly accessible to modification even if you are not an assembly expert. If you are then YMMV.
-
-This may be old news to many people but is included here for those to whom this is new. 
-
-### The workflow
-
-The key insight is that you do not need to understand every Assembly opcode to extend these interpreters. The workflow for 6502 is below, others similar:
-
-1. **Create a 'Project' in Claude**, Upload ASM65c02.c, SIM65c02.c to the files section, add rules like below, and in the chat window upload the ASM version you want to modify and tell it to review.
-```asm
-To avoid wasting tokens, provide brief, terse updates during debugging and resume normal verbosity when concluding. 
-Always uprev tool versions if you need to modify them by updating the header file and update the trace file.
-To avoid using wrong version, Copy old source version to an archive folder and only use them for regression testing.
-```
-3. **Describe what you want** to Claude in plain English — a new statement, a new operator, a bug fix, or a size optimisation.
-4. **Claude proposes the assembly change** with full explanation of what it is doing and whether the tools need updating.
-5. **Tell Claude to implement and Test with the simulator** - If it is interrupted **Dont't Click Retry** but type "continue from Trace file" and it should.
-6. **When complete, Paste the modified source** into the Kowalski simulator or Interactive Sim to cross check:
-   ```bash
-   ./sim65c02_interactive uBASIC.asm "
-   ```
-
-### Things to watch out for
-
-- **Fall-through chains.** Several functions share a single RTS by falling through into the next function. These are clearly marked in the source. Inserting code between them without understanding the fall-through will break things — tell Claude to watch out for them.
 
 ---
 
