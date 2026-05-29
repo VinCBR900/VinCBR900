@@ -18,14 +18,15 @@ You can play with the 6502 and 8088 versions on 8bit workshop thanks to [SEHugg]
 
 ---
 
-## Comparison: Dr Dobbs Tiny BASIC, Apple 1 4K BASIC vs These 6502/65c02 uBASIC, 65C02 4K BASIC, and uBASIC 8088
+## Comparison: Dr Dobbs Tiny BASIC, Apple 1 4K BASIC vs These 
 
-This section compares four interpreters from the same tradition: 
+This section compares multiple interpreters from the same tradition: 
   - The original Tiny BASIC specification published in Dr. Dobb's Journal (1975–1976),
   - These 6502/65C02 2KB uBASICs,
   - Apple 1 BASIC written by Steve Wozniak (1976),
   - This 65c02 4KB BASIC,
   - This 2KB uBASIC8088,
+  - This 4KB uBASIC for Signetics 2650
 
 ### Background
 
@@ -64,63 +65,65 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 
 ### Feature comparison table
 
-| Feature | Original Tiny BASIC (spec) | 65C02/6502 uBASIC | Apple 1 BASIC | 65C02 4K Tiny BASIC | uBASIC 8088) |
-|---------|---------------------------|-------------------------------|-----------------------------|-----------------------------|-------------------|
-| **Size** | Spec only | <2 KByte ROM | 4096 bytes (cassette) | 4093 bytes ROM | 2 KByte ROM |
-| **CPU target** | N/A | uBASIC: 65C02, uBASIC6502: NMOS 6502 | 6502 | 65C02 | 8088 |
-| **Tokenised** | ✗ (most impls raw ASCII) | ✗ (raw ASCII) | ✓ | ✓ | ✓ |
-| **Integer only** | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit |
-| **Variables** | A–Z | A–Z | A–Z, An (letter+digit) | A–Z | A–Z |
-| **Integer arrays / DIM** | ✗ | ✗ | `DIM A(n)` | ✗ | ✗ |
-| **Strings** | ✗ (literals in PRINT only) | ✗ | ✓ (char arrays, `DIM A$(n)`) | ✗ (literals in PRINT only) |✗ (literals in PRINT only) |
-| **Multi-statement `:`** | ✗ | ✓ | ✓ | ✓ | ✓ |
-| **PRINT `;` no-newline** | ✗ | ✓ | ✓ | ✓ | ✓ |
-| **PRINT string literal** | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **INPUT** | ✓ | ✓ | ✓ (With Prompt) | ✓ | ✓ |
-| **LET** | ✓ (required) | ✓ (optional) | ✓ (optional) | ✓ (optional) | ✓ (optional) |
-| **IF/THEN** | ✓ (line number or stmt) | ✓ | ✓ (stmt or line number) | ✓ | ✓ |
-| **ELSE** | ✗ | ✗ | ✗ | ✓ | ✗ |
-| **GOTO expression** | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) |
-| **GOSUB expression** | ✓ (computed) | ✗ | ✓ (computed) | ✓ (computed) | ✓ (computed) |
-| **GOSUB nesting depth** | impl-dependent | n/a | 8 max | 8 | 8 |
-| **RETURN** | ✓ | ✗ | ✓ | ✓ | ✓ |
-| **ON n GOTO/GOSUB** | ✗ | ✗ | ✗ | ✓ | ✗ |
-| **FOR/NEXT/STEP** | ✗ | ✗ | ✓ | ✓ | ✓ |
-| **FOR nesting depth** | n/a | n/a | 8 | 8 | 8 |
-| **DATA/READ/RESTORE** | ✗ | ✗ | ✗ | ✓ | ✗ |
-| **REM** | ✗ | ✓ | ✗ | ✓ | ✓ |
-| **END** | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **CLEAR / NEW** | `CLEAR` | `NEW` | `NEW` | `NEW` | `NEW` |
-| **RUN / LIST** | ✓ | ✓ | ✓ | ✓ | ✓ (`LIST` has optional `start,end` range|
-| **PEEK / POKE** | ✗ | ✓ | ✓ | ✓ | ✓ and `IN`/`OUT`|
-| **Machine Langauge** | ✗ | `USR(addr)` (JSR, returns A)  | `CALL addr` (JSR, no retval) | `USR(addr)` (JSR, returns A) | `USR(addr)` (CALL, returns AX) |
-| **Arithmetic Ops** | ✗ | ✗ | `ABS` | `ABS` `SGN` | `ABS` | 
-| **RND** | ✗ | ✗ | ✓ `RND(n)` → 0..n-1 | ✓ `RND` → 1..32767 | ✓ `RND(n)` → -n..n |
-| **Character Conv** | ✗ | `CHR$` | ✗ | `ASC` `CHR$` | `CHR$` |
-| **LEN(str)** | ✗ | ✗ | ✓ (on DIM'd strings) | ✗ | ✗ |
-| **MOD / %** | ✗ | ✓ `%` | ✗ | ✓ both | ✓ `%` |
-| **Logical Ops** | ✗ | ✗ | ✓ bitwise `AND` `OR` `NOT` | ✓ bitwise `AND` `OR` `NOT` `XOR` | ✓ bitwise `&` &#124; `NOT(val`|
-| **Relational ops** | `<` `>` `=` `<=` `>=` `<>` | ✓ | ✓ (also `#` for `<>`) | ✓ | ✓ |
-| **INKEY (non-blocking)** | ✗ | ✗ | ✗ | ✓ | ✗ |
-| **CLS / HOME (clear screen)** | ✗ | ✗ | ✗ | ✓ `CLS` | ✗ |
-| **Cursor positioning** | ✗ | ✗ | ✗ (dumb terminal only) | ✓ `AT(col,row)` in `PRINT` | ✓ `TAB(spaces)` in `PRINT` |
-| **FREE (memory query)** | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✓ `HIMEM=` / `LOMEM=` | ✓ | ✓ |
-| **HELP / keyword list** | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✗ | ✓ | ✓ |
-| **AUTO line numbering** | ✗ | ✗ | ✓ | ✗ | ✗ |
-| **Cassette LOAD/SAVE** | ✗ | ✗ | ✓ (via ACI hardware) | ✗ | ✗ |
-| **Line number range** | 1–32767 | 0–32767 | 0–32767 | 0–32767 | 1–32767 |
+| Feature | Original Tiny BASIC (spec) | 65C02/6502 uBASIC | Apple 1 BASIC | 65C02 4K Tiny BASIC | uBASIC 8088 | uBASIC 2650 |
+|---------|---------------------------|-------------------------------|-----------------------------|-----------------------------|-------------------|-------------------|
+| **Size** | Spec only | <2 KByte ROM | 4096 bytes (cassette) | 4093 bytes ROM | 2 KByte ROM | 4 KByte ROM |
+| **CPU target** | N/A | uBASIC: 65C02, uBASIC6502: NMOS 6502 | 6502 | 65C02 | Intel 8088 | Signetics 2650 |
+| **Tokenised** | ✗ (most impls raw ASCII) | ✗ (raw ASCII) | ✓ | ✓ | ✓ | ✗ (2 byte match) | 
+| **Integer only** | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit |
+| **Variables** | A–Z | A–Z | A–Z, An (letter+digit) | A–Z | A–Z | A–Z |
+| **Integer arrays / DIM** | ✗ | ✗ | `DIM A(n)` | ✗ | ✗ | ✗ |
+| **Strings** | ✗ (literals in PRINT only) | ✗ | ✓ (char arrays, `DIM A$(n)`) | ✗ (literals in PRINT only) |✗ (literals in PRINT only) |✗ (literals in PRINT only) |
+| **Multi-statement `:`** | ✗ | ✓ | ✓ | ✓ | ✓ | ✗ | 
+| **PRINT `;` no-newline** | ✗ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **PRINT string literal** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **INPUT** | ✓ | ✓ | ✓ (With Prompt) | ✓ | ✓ | ✓ |
+| **LET** | ✓ (required) | ✓ (optional) | ✓ (optional) | ✓ (optional) | ✓ (optional) | ✓ (optional) |
+| **IF/THEN** | ✓ (line number or stmt) | ✓ | ✓ (stmt or line number) | ✓ | ✓ | ✓ |
+| **ELSE** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
+| **GOTO expression** | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (static) |
+| **GOSUB expression** | ✓ (computed) | ✗ | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✗ |
+| **GOSUB/RETURN** | ✓ | ✗ | ✓ | ✓ | ✓ | ✗ |
+| **GOSUB nesting depth** | impl-dependent | n/a | 8 max | 8 | 8 | n/a |
+| **ON n GOTO/GOSUB** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
+| **FOR/NEXT/STEP** | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | 
+| **FOR nesting depth** | n/a | n/a | 8 | 8 | 8 | n/a |
+| **DATA/READ/RESTORE** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
+| **REM** | ✗ | ✓ | ✗ | ✓ | ✓ | ✗ |
+| **END** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **CLEAR / NEW** | `CLEAR` | `NEW` | `NEW` | `NEW` | `NEW` | `NEW` |
+| **RUN / LIST** | ✓ | ✓ | ✓ | ✓ | ✓ (`LIST` has optional `start,end` range) | ✓ |
+| **PEEK / POKE** | ✗ | ✓ | ✓ | ✓ | ✓ and `IN`/`OUT`| ✗ |
+| **Machine Langauge** | ✗ | `USR(addr)` (JSR, returns A)  | `CALL addr` (JSR, no retval) | `USR(addr)` (JSR, returns A) | `USR(addr)` (CALL, returns AX) | ✗ |
+| **Math Functions** | ✗ | ✗ | `ABS` | `ABS` `SGN` | `ABS` | ✗ |  
+| **RND** | ✗ | ✗ | ✓ `RND(n)` → 0..n-1 | ✓ `RND` → 1..32767 | ✓ `RND(n)` → -n..n | ✗ |
+| **Character Conv** | ✗ | `CHR$` | ✗ | `ASC` `CHR$` | `CHR$` | `CHR$` |
+| **LEN(str)** | ✗ | ✗ | ✓ (on DIM'd strings) | ✗ | ✗ | ✗ |
+| **MOD / %** | ✗ | ✓ `%` | ✗ | ✓ both | ✓ `%` | ✗ |
+| **Logical Ops** | ✗ | ✗ | ✓ bitwise `AND` `OR` `NOT` | ✓ bitwise `AND` `OR` `NOT` `XOR` | ✓ bitwise `&` `\|` `NOT(val)`| ✗ |
+| **Relational ops** | `<` `>` `=` `<=` `>=` `<>` | ✓ | ✓ (also `#` for `<>`) | ✓ | ✓ | ✓ |
+| **INKEY (non-blocking)** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
+| **CLS / HOME (clear screen)** | ✗ | ✗ | ✗ | ✓ `CLS` | ✗ | ✗ |
+| **Cursor positioning** | ✗ | ✗ | ✗ (dumb terminal only) | ✓ `AT(col,row)` in `PRINT` | ✓ `TAB(spaces)` in `PRINT` | ✓ `TAB(spaces)` in `PRINT` |
+| **FREE (memory query)** | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✓ `HIMEM=` / `LOMEM=` | ✓ | ✓ | ✗ |
+| **HELP / keyword list** | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✗ | ✓ | ✓ | ✗ |
+| **AUTO line numbering** | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ |
+| **Cassette LOAD/SAVE** | ✗ | ✗ | ✓ (via ACI hardware) | ✗ | ✗ | ✗ |
+| **Line number range** | 1–32767 | 0–32767 | 0–32767 | 0–32767 | 1–32767 | 1–32767 |
 
 #### Notes on each column
 
 **Original Tiny BASIC specification** (DDJ Vol 1, 1975–1976). The spec is intentionally minimal — Dennis Allison's goal was a BASIC small enough to fit in 4 KB of RAM on an 8080 with room left for programs. `IF` does not have `ELSE`. There is no `REM`, no `FOR`, no `DATA`, no functions. `GOSUB` and computed `GOTO` are present from the start. The single-array `@(i)` was added by some implementations (notably Palo Alto Tiny BASIC) but is not in the base specification. String literals appear only as arguments to `PRINT`.
 
-**uBASIC 6502/65c02** (~2 KB, this project). Closest in spirit to the original Tiny BASIC spec. Adds `REM`, `%` (modulo), `CHR$(n)`, `USR(addr)`, `PEEK`/`POKE`, bitwise operators, and `FREE`/  Omits `FOR`, `GOSUB`, and computed `GOTO` to stay within 2 KB. Does not tokenise: programs are stored and interpreted as raw ASCII, which costs some speed but saves tokeniser code. Loops and subroutines are implemented with `GOTO` and variable-based state, as in the classic Tiny BASIC tradition.
+**uBASIC 6502/65c02** (~2 KB, this project). In spirit to the original Tiny BASIC spec. Adds `REM`, `%` (modulo), `CHR$(n)`, `USR(addr)`, `PEEK`/`POKE`, bitwise operators, and `FREE`/  Omits `FOR`, `GOSUB`/`RETURN` to stay within 2 KB. Does not tokenise: programs are stored and interpreted as raw ASCII, which costs some speed but saves tokeniser code. Loops and subroutines are implemented with `GOTO` and variable-based state, as in the classic Tiny BASIC tradition.
 
-**Apple 1 BASIC** (~4 KB, Wozniak 1976). Fills its 4 KB cassette image with considerably more than the spec. Tokenised for speed; Wozniak noted it outperformed Microsoft BASIC on benchmarks of the day. Adds `FOR`/`NEXT`, integer arrays, character-array strings with `DIM`, `ABS`, `RND`, `AND`/`OR`/`NOT`, `CALL`, `AUTO`, and `HIMEM=`/`LOMEM=`. The `IF` condition uses a value of 1 for true (not just non-zero) which differs from most BASICs. Notably absent: `DATA`/`READ`, `REM`, `ELSE`, `ON…GOTO`, `MOD`, `CHR$`, `ASC`, `SGN`. The Apple 1 had no graphics hardware and no cursor positioning — just a raw serial output, so there is no `HOME`, `TAB`, `VTAB`, `PLOT`, `GR`, etc. at all (those came with the Apple II port). Program execution stops if any key is pressed, which made it easy to accidentally interrupt a running program.
+**Apple 1 BASIC** (~4 KB, Wozniak 1976). Fills its 4 KB cassette image with considerably more than the Tiny BASIC spec. Tokenised for speed; Wozniak noted it outperformed Microsoft BASIC on benchmarks of the day. Adds `FOR`/`NEXT`, integer arrays, character-array strings with `DIM`, `ABS`, `RND`, `AND`/`OR`/`NOT`, `CALL`, `AUTO`, and `HIMEM=`/`LOMEM=`. The `IF` condition uses a value of 1 for true (not just non-zero) which differs from most BASICs. Notably absent: `DATA`/`READ`, `REM`, `ELSE`, `ON…GOTO`, `MOD`, `CHR$`, `ASC`, `SGN`. The Apple 1 had no graphics hardware and no cursor positioning — just a raw serial output, so there is no `HOME`, `TAB`, `VTAB`, `PLOT`, `GR`, etc. at all (those came with the Apple II port). Program execution stops if any key is pressed, which made it easy to accidentally interrupt a running program.
 
-**4K BASIC 65c02** (~4 KB, this project). This was an experiment expanding 2kbyte Tiny BASIC for the 6502 in the Kowalski emulator: tokenised, includes `FOR`/`NEXT`, `GOSUB`/`RETURN`, `DATA`/`READ`/`RESTORE`, `ON n GOTO/GOSUB`, `ELSE`, `SGN`, `ABS`, `RND`, `ASC`, `CHR$`, `MOD`/`%`, `XOR`, `INKEY`, `CLS`, and `AT(col,row)` cursor control, still no arrays arrays or strings. In all honesty, if you are looking for a more powerful 6502 BASIC then [EhBASIC](https://github.com/picocomputer/ehbasic) is hard to beat. 
+**4K BASIC 65c02** (~4 KB, this project). This was a test expanding 2kbyte Tiny BASIC for the 6502 in the Kowalski emulator: tokenised, includes `FOR`/`NEXT`, `GOSUB`/`RETURN`, `DATA`/`READ`/`RESTORE`, `ON n GOTO/GOSUB`, `ELSE`, `SGN`, `ABS`, `RND`, `ASC`, `CHR$`, `MOD`/`%`, `XOR`, `INKEY`, `CLS`, and `AT(col,row)` cursor control, still no arrays arrays or strings. In all honesty, if you are looking for a modern 6502 BASIC and arent restricting yourself to small ROMs,  then [EhBASIC](https://github.com/picocomputer/ehbasic) is hard to beat. 
 
 **uBASIC 8088** (~2 KB, this project). Ported from 65C02 uBASIC, but due to the intrinsec signed 16 bit instruction set provides ROM space for extra functionality: `DELAY`, `FOR..TO..[STEP]`/`NEXT`, `GOSUB`/`RETURN`, `IN`/`OUT`, optional (start, end) for `LIST`, `TAB(n)` in addition to `CHR$` in `PRINT`.  Keywords are mostly tokenized to save RAM space.  
+
+**uBASIC 2650** (~4 KB, this project). In spirit to the original Tiny BASIC spec. Ported from 6502 version with  `REM`, `CHR$(n)`.  Omits `FOR`, `GOSUB`/`RETURN` to stay within 4 KB. Does not tokenise but only parses 2 bytes fo each command. Loops and subroutines are implemented with `GOTO` and variable-based state, as in the classic Tiny BASIC tradition.  This has been the most difficult to develop and has fewer features for more memory. 
 
 #### What Apple 1 BASIC has that non of my Tiny BASIC variants provide
 
