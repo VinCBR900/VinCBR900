@@ -80,7 +80,7 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **LET** | ✓ (required) | ✓ (optional) | ✓ (optional) | ✓ (optional) | ✓ (optional) | ✓ (optional) |
 | **IF/THEN** | ✓ (line number or stmt) | ✓ | ✓ (stmt or line number) | ✓ | ✓ | ✓ |
 | **ELSE** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
-| **GOTO expression** | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (static) |
+| **GOTO expression** | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) |
 | **GOSUB expression** | ✓ (computed) | ✗ | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✗ |
 | **GOSUB/RETURN** | ✓ | ✗ | ✓ | ✓ | ✓ | ✗ |
 | **GOSUB nesting depth** | impl-dependent | n/a | 8 max | 8 | 8 | n/a |
@@ -97,7 +97,7 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **Math Functions** | ✗ | ✗ | `ABS` | `ABS` `SGN` | `ABS` | ✗ |  
 | **RND** | ✗ | ✗ | ✓ `RND(n)` → 0..n-1 | ✓ `RND` → 1..32767 | ✓ `RND(n)` → -n..n | ✗ |
 | **Character Conv** | ✗ | `CHR$` | ✗ | `ASC` `CHR$` | `CHR$` | `CHR$` |
-| **MOD / %** | ✗ | ✓ `%` | ✗ | ✓ both | ✓ `%` | ✗ |
+| **MOD / %** | ✗ | ✓ `%` | ✗ | ✓ both | ✓ `%` | ✓ `%` |
 | **Logical Ops** | ✗ | ✗ | ✓ bitwise `AND` `OR` `NOT` | ✓ bitwise `AND` `OR` `NOT` `XOR` | ✓ bitwise `&` `\|` `NOT(val)`| ✗ |
 | **Relational ops** | `<` `>` `=` `<=` `>=` `<>` | ✓ | ✓ (also `#` for `<>`) | ✓ | ✓ | ✓ |
 | **INKEY (non-blocking)** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
@@ -119,7 +119,7 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 
 **uBASIC 8088** (~2 KB, this project). Ported from 65C02 uBASIC, but due to the intrinsec signed 16 bit instruction set provides ROM space for extra functionality: `DELAY`, `FOR..TO..[STEP]`/`NEXT`, `GOSUB`/`RETURN`, `IN`/`OUT`, optional (start, end) for `LIST`, `TAB(n)` in addition to `CHR$` in `PRINT`.  Keywords are mostly tokenized to save RAM space.  
 
-**uBASIC 2650** (~4 KB, this project). In spirit to the original Tiny BASIC spec. Ported from 6502 version with  `REM`, `CHR$(n)`.  Omits `FOR`, `GOSUB`/`RETURN` to stay within 4 KB. Does not tokenise but only parses 2 bytes fo each command. Loops and subroutines are implemented with `GOTO` and variable-based state, as in the classic Tiny BASIC tradition.  This has been the most difficult to develop and has fewer features for more memory. 
+**uBASIC 2650** (~4 KB, this project). In spirit to the original Tiny BASIC spec. Ported from 6502 version with  `REM`, `CHR$(n)`.  Omits `FOR`, `GOSUB`/`RETURN` to stay within 4 KB. Does not tokenise but only parses 2 bytes of each command. Loops and subroutines are implemented with `GOTO` and variable-based state, as in the classic Tiny BASIC tradition.  This has been the most difficult to develop and has fewer features for more memory. 
 
 #### What Apple 1 BASIC has that non of my Tiny BASIC variants provide
 
