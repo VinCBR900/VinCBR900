@@ -70,7 +70,7 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **Size** | Spec only | <2 KByte ROM | 4096 bytes (cassette) | 4093 bytes ROM | 2 KByte ROM | 4 KByte ROM |
 | **CPU target** | N/A | uBASIC: 65C02, uBASIC6502: NMOS 6502 | 6502 | 65C02 | Intel 8088 | Signetics 2650 |
 | **Tokenised** | ✗ (mostly raw ASCII) | ✗ (uBASIC6502 byte match) | ✓ | ✓ | ✓ | ✗ (2 byte match) | 
-| **Integer only** | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit | ✓ signed 16-bit |
+| **Variable Type** | Signed 16-bit INT|Signed 16-bit INT|Signed 16-bit INT|Signed 16-bit INT|Signed 16-bit INT|Signed 16-bit INT|
 | **Variables** | A–Z | A–Z | A–Z, An (letter+digit) | A–Z | A–Z | A–Z |
 | **Integer arrays / DIM** | ✗ | ✗ | `DIM A(n)` | ✗ | ✗ | ✗ |
 | **Strings** | ✗ (`PRINT "str"`) | ✗ | ✓ (char arrays, `DIM A$(n)`) | ✗ (`PRINT "str"`) |✗ (`PRINT "str"`) |✗ (`PRINT "str"`) |
@@ -82,20 +82,20 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **ELSE** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
 | **GOTO expression** | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) |
 | **GOSUB expression** | ✓ (computed) | ✗ | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✗ |
-| **GOSUB/RETURN** | ✓ | ✗ | ✓ | ✓ | ✓ | ✗ |
-| **GOSUB nesting depth** | impl-dependent | n/a | 8 max | 8 | 8 | n/a |
+| **GOSUB/RETURN** | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ |
+| **GOSUB nesting depth** | impl-dependent | n/a | 8 max | 8 | 8 | 7 |
 | **ON n GOTO/GOSUB** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
-| **FOR/NEXT/STEP** | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | 
-| **FOR nesting depth** | n/a | n/a | 8 | 8 | 8 | n/a |
+| **FOR/NEXT/STEP** | ✗ | ✗ | ✓ | ✓ | ✓ | ✓ (runs once) | 
+| **FOR nesting depth** | n/a | n/a | 8 | 8 | 8 | 8 |
 | **DATA/READ/RESTORE** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
-| **REM** | ✗ | ✓ | ✗ | ✓ | ✓ | ✗ |
+| **REM** | ✗ | ✓ | ✗ | ✓ | ✓ | ✓ |
 | **END** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **CLEAR / NEW** | `CLEAR` | `NEW` | `NEW` | `NEW` | `NEW` | `NEW` |
-| **RUN / LIST** | ✓ | ✓ | ✓ | ✓ | ✓ (`LIST` has optional `start,end` range) | ✓ |
-| **PEEK / POKE** | ✗ | ✓ | ✓ | ✓ | ✓ and `IN`/`OUT`| ✗ |
-| **Machine Langauge** | ✗ | `USR(addr)` (JSR, returns A)  | `CALL addr` (JSR, no retval) | `USR(addr)` (JSR, returns A) | `USR(addr)` (CALL, returns AX) | ✗ |
-| **Math Functions** | ✗ | ✗ | `ABS` | `ABS` `SGN` | `ABS` | ✗ |  
-| **RND** | ✗ | ✗ | ✓ `RND(n)` → 0..n-1 | ✓ `RND` → 1..32767 | ✓ `RND(n)` → -n..n | ✗ |
+| **RUN / LIST** | ✓ | ✓ | ✓ | ✓ | ✓ (`LIST` has optional `start,end` range) | ✓ (`LIST` has optional `start,end` range) |
+| **PEEK / POKE** | ✗ | ✓ | ✓ | ✓ | ✓ and `IN`/`OUT`| ✓ |
+| **Machine Langauge** | ✗ | `USR(addr)` (JSR, returns A)  | `CALL addr` (JSR, no retval) | `USR(addr)` (JSR, returns A) | `USR(addr)` (CALL, returns AX) | `USR(addr)` (BSTA,UN, returns R0) |
+| **Math Functions** | ✗ | ✗ | `ABS` | `ABS` `SGN` | `ABS` | `ABS` `NEG`|  
+| **RND** | ✗ | ✗ | ✓ `RND(n)` → 0..n-1 | ✓ `RND` → 1..32767 | ✓ `RND(n)` → -n..n | ✓ `RND(n)` → 0..n |
 | **Character Conv** | ✗ | `CHR$` | ✗ | `ASC` `CHR$` | `CHR$` | `CHR$` |
 | **MOD / %** | ✗ | ✓ `%` | ✗ | ✓ both | ✓ `%` | ✓ `%` |
 | **Logical Ops** | ✗ | ✗ | ✓ bitwise `AND` `OR` `NOT` | ✓ bitwise `AND` `OR` `NOT` `XOR` | ✓ bitwise `&` `\|` `NOT(val)`| ✗ |
@@ -103,7 +103,7 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **INKEY (non-blocking)** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
 | **CLS / HOME (clear screen)** | ✗ | ✗ | ✗ | ✓ `CLS` | ✗ | ✗ |
 | **`PRINT` Cursor positioning** | ✗ | ✗ | ✗ (dumb terminal only) | ✓ `AT(col,row)` | ✓ `TAB(spaces)`| ✓ `TAB(spaces)`|
-| **Memory Query** `FREE` | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✓ `HIMEM=` / `LOMEM=` | ✓ | ✓ | ✗ |
+| **Memory Query** `FREE` | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✓ `HIMEM=` / `LOMEM=` | ✓ | ✓ | `FREE` |
 | **keyword list** `HELP` | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✗ | ✓ | ✓ | ✗ |
 | **Line number range** | 1–32767 | 0–32767 | 0–32767 | 0–32767 | 1–32767 | 1–32767 |
 
