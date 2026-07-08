@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 asmdup.py - v1.1
+Copyright Vincent Crabtree 2026 * MIT License see LICENCE
 
 Purpose:
     Find duplicated instruction sequences in assembly source files, to help
