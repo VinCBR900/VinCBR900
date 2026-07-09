@@ -100,7 +100,7 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **Bitwise Ops** | ✗ | ✗ | ✓ `AND` `OR` `NOT` | ✓ `AND` `OR` `NOT` `XOR` | ✓ `&` `\|` `NOT(val)`| ✓ `AND` `OR` `NOT` `XOR` |
 | **Relational ops** | `<` `>` `=` `<=` `>=` `<>` | ✓ | ✓ (also `#` for `<>`) | ✓ | ✓ | ✓ |
 | **`PRINT` Cursor positioning** | ✗ | ✓ `TAB(spaces)`| ✗ (dumb terminal only) | ✓ `TAB(spaces)` | ✓ `TAB(spaces)`| ✓ `TAB(spaces)`|
-| **Memory Query** | ✗ | 'PRINT FREE' | ✓ `HIMEM=` / `LOMEM=` | ✓ | ✓ | `FREE` |
+| **Memory Query** | ✗ | ✓ `PRINT FREE` | ✓ `HIMEM=` / `LOMEM=` | ✓ `FREE`| ✓ `FREE`| ✓ `FREE` |
 | **keyword list** `HELP` | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ |
 | **Line number range** | 1–32767 | 0–32767 | 0–32767 | 0–32767 | 1–32767 | 1–32767 |
 
