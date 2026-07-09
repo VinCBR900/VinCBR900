@@ -92,16 +92,15 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **CLEAR / NEW** | `CLEAR` | `NEW` | `NEW` | `NEW` | `NEW` | `NEW` |
 | **RUN / LIST** | ✓ | ✓ (Optional `start,end` | ✓ | ✓ | ✓ (Optional `start,end`) | ✓ (Optional `start,end` |
 | **PEEK / POKE** | ✗ | ✓ | ✓ | ✓ | ✓ and `IN`/`OUT`| ✓ |
-| **Machine Langauge** | ✗ | `USR(addr)` (Tail call, returns ZP $00)  | `CALL addr` (JSR, no retval) | `USR(addr)` (Tail call, returns ZP $00) | `USR(addr)` (CALL, returns AX) | `USR(addr)` (BCTA,UN Tail Call, returns R0) |
-| **Math Functions** | ✗ | ✗ | `ABS` | `ABS` `SGN` | `ABS` | `ABS` `NEG`|  
+| **Machine Langauge** | ✗ | `USR(addr)` (Tail call, return in ZP $00)  | `CALL addr` | `USR(addr)` (Tail call, returns ZP $00) | `USR(addr)` (CALL, return in AX) | `USR(addr)` (Tail Call, return in R0) |
+| **Math Functions** | ✗ | `ABS` | `ABS` | `ABS` `SGN` `SIN` `COS`| `ABS` | `ABS` `NEG`|  
 | **RND** | ✗ | ✓ `RND` → 1..32767 | ✓ `RND(n)` → 0..n-1 | ✓ `RND` → 1..32767 | ✓ `RND(n)` → -n..n | ✓ `RND(n)` → 0..n |
 | **Character Conv** | ✗ | `CHR$` | ✗ | `ASC` `CHR$` | `CHR$` | `CHR$` |
 | **MOD / %** | ✗ | ✓ `%` | ✗ | ✓ both | ✓ `%` | ✓ `%` |
 | **Bitwise Ops** | ✗ | ✗ | ✓ `AND` `OR` `NOT` | ✓ `AND` `OR` `NOT` `XOR` | ✓ `&` `\|` `NOT(val)`| ✓ `AND` `OR` `NOT` `XOR` |
 | **Relational ops** | `<` `>` `=` `<=` `>=` `<>` | ✓ | ✓ (also `#` for `<>`) | ✓ | ✓ | ✓ |
-| **INKEY (non-blocking)** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
 | **`PRINT` Cursor positioning** | ✗ | ✓ `TAB(spaces)`| ✗ (dumb terminal only) | ✓ `TAB(spaces)` | ✓ `TAB(spaces)`| ✓ `TAB(spaces)`|
-| **Memory Query** `FREE` | ✗ | 'PRINT FREE' | ✓ `HIMEM=` / `LOMEM=` | ✓ | ✓ | `FREE` |
+| **Memory Query** | ✗ | 'PRINT FREE' | ✓ `HIMEM=` / `LOMEM=` | ✓ | ✓ | `FREE` |
 | **keyword list** `HELP` | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ |
 | **Line number range** | 1–32767 | 0–32767 | 0–32767 | 0–32767 | 1–32767 | 1–32767 |
 
