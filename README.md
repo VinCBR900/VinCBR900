@@ -65,11 +65,11 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 
 ### Feature comparison table
 
-| Feature | Original Tiny BASIC (spec) | 65C02/6502 uBASIC | Apple 1 BASIC | 65C02 4K Tiny BASIC | uBASIC 8088 | uBASIC 2650 |
+| Feature | Original Tiny BASIC (spec) | uBASIC 6502 | Apple 1 BASIC | 65C02 4K Tiny BASIC | uBASIC 8088 | uBASIC 2650 |
 |---------|---------------------------|-------------------------------|-----------------------------|-----------------------------|-------------------|-------------------|
 | **Size** | Spec only | <2 KByte ROM | 4096 bytes (cassette) | 4093 bytes ROM | 2 KByte ROM | 4 KByte ROM |
-| **CPU target** | N/A | uBASIC: 65C02, uBASIC6502: NMOS 6502 | 6502 | 65C02 | Intel 8088 | Signetics 2650 |
-| **Tokenised** | ✗ (raw ASCII) | uBASIC: ✗ Keyword match, uBASIC6502: ✗ 2 byte match | ✓ | ✓ | ✓ | ✗ 2 byte match | 
+| **CPU target** | N/A | NMOS 6502 | NMOS 6502 | 65C02 | Intel 8088 | Signetics 2650 |
+| **Tokenised** | ✗ (raw ASCII) | ✗ 2 byte match | ✓ | ✓ | ✓ | ✗ 2 byte match | 
 | **Variable Type** | Signed 16-bit INT|Signed 16-bit INT|Signed 16-bit INT|Signed 16-bit INT|Signed 16-bit INT|Signed 16-bit INT|
 | **Variables** | A–Z | A–Z | A–Z, An (letter+digit) | A–Z | A–Z | A–Z |
 | **Integer arrays / DIM** | ✗ | ✗ | `DIM A(n)` | ✗ | ✗ | ✗ |
@@ -83,28 +83,26 @@ Key points: variables are single letters A–Z only (no arrays, no strings). Num
 | **GOTO expression** | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✓ (computed) |
 | **GOSUB expression** | ✓ (computed) | ✗ | ✓ (computed) | ✓ (computed) | ✓ (computed) | ✗ |
 | **GOSUB/RETURN** | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ |
-| **GOSUB nesting depth** | impl-dependent | n/a | 8 max | 8 | 8 | 7 |
-| **ON n GOTO/GOSUB** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
+| **GOSUB nesting depth** | n/a | n/a | 8 max | 8 | 8 | 7 |
 | **FOR/NEXT/STEP** | ✗ | ✗ | ✓ | ✓ | ✓ | ✓ (runs once) | 
 | **FOR nesting depth** | n/a | n/a | 8 | 8 | 8 | 8 |
 | **DATA/READ/RESTORE** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
 | **REM** | ✗ | ✓ | ✗ | ✓ | ✓ | ✓ |
 | **END** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **CLEAR / NEW** | `CLEAR` | `NEW` | `NEW` | `NEW` | `NEW` | `NEW` |
-| **RUN / LIST** | ✓ | ✓ | ✓ | ✓ | ✓ (`LIST` has optional `start,end` range) | ✓ (`LIST` has optional `start,end` range) |
+| **RUN / LIST** | ✓ | ✓ (Optional `start,end` | ✓ | ✓ | ✓ (Optional `start,end`) | ✓ (Optional `start,end` |
 | **PEEK / POKE** | ✗ | ✓ | ✓ | ✓ | ✓ and `IN`/`OUT`| ✓ |
-| **Machine Langauge** | ✗ | `USR(addr)` (JSR, returns A)  | `CALL addr` (JSR, no retval) | `USR(addr)` (JSR, returns A) | `USR(addr)` (CALL, returns AX) | `USR(addr)` (BCTA,UN Tail Call, returns R0) |
+| **Machine Langauge** | ✗ | `USR(addr)` (Tail call, returns ZP $00)  | `CALL addr` (JSR, no retval) | `USR(addr)` (Tail call, returns ZP $00) | `USR(addr)` (CALL, returns AX) | `USR(addr)` (BCTA,UN Tail Call, returns R0) |
 | **Math Functions** | ✗ | ✗ | `ABS` | `ABS` `SGN` | `ABS` | `ABS` `NEG`|  
-| **RND** | ✗ | ✗ | ✓ `RND(n)` → 0..n-1 | ✓ `RND` → 1..32767 | ✓ `RND(n)` → -n..n | ✓ `RND(n)` → 0..n |
+| **RND** | ✗ | ✓ `RND` → 1..32767 | ✓ `RND(n)` → 0..n-1 | ✓ `RND` → 1..32767 | ✓ `RND(n)` → -n..n | ✓ `RND(n)` → 0..n |
 | **Character Conv** | ✗ | `CHR$` | ✗ | `ASC` `CHR$` | `CHR$` | `CHR$` |
 | **MOD / %** | ✗ | ✓ `%` | ✗ | ✓ both | ✓ `%` | ✓ `%` |
 | **Bitwise Ops** | ✗ | ✗ | ✓ `AND` `OR` `NOT` | ✓ `AND` `OR` `NOT` `XOR` | ✓ `&` `\|` `NOT(val)`| ✓ `AND` `OR` `NOT` `XOR` |
 | **Relational ops** | `<` `>` `=` `<=` `>=` `<>` | ✓ | ✓ (also `#` for `<>`) | ✓ | ✓ | ✓ |
 | **INKEY (non-blocking)** | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ |
-| **CLS / HOME (clear screen)** | ✗ | ✗ | ✗ | ✓ `CLS` | ✗ | ✗ |
-| **`PRINT` Cursor positioning** | ✗ | uBASIC: ✓ `TAB(spaces)`, uBASIC6502: ✗| ✗ (dumb terminal only) | ✓ `AT(col,row)` | ✓ `TAB(spaces)`| ✓ `TAB(spaces)`|
-| **Memory Query** `FREE` | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✓ `HIMEM=` / `LOMEM=` | ✓ | ✓ | `FREE` |
-| **keyword list** `HELP` | ✗ | uBASIC: ✓, uBASIC6502: ✗ | ✗ | ✓ | ✓ | ✗ |
+| **`PRINT` Cursor positioning** | ✗ | ✓ `TAB(spaces)`| ✗ (dumb terminal only) | ✓ `TAB(spaces)` | ✓ `TAB(spaces)`| ✓ `TAB(spaces)`|
+| **Memory Query** `FREE` | ✗ | 'PRINT FREE' | ✓ `HIMEM=` / `LOMEM=` | ✓ | ✓ | `FREE` |
+| **keyword list** `HELP` | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ |
 | **Line number range** | 1–32767 | 0–32767 | 0–32767 | 0–32767 | 1–32767 | 1–32767 |
 
 #### Notes on each column
